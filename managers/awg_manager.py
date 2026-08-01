@@ -822,6 +822,51 @@ tail -f /dev/null
                 return str(host)
         raise RuntimeError(f'No free IP addresses available in subnet {network}')
 
+    @staticmethod
+    def _peer_block_ip(block):
+        """Sort key for a [Peer] config block: its first AllowedIPs IPv4 address."""
+        match = re.search(r'AllowedIPs\s*=\s*(\d+)\.(\d+)\.(\d+)\.(\d+)', block)
+        if match:
+            return tuple(int(match.group(i)) for i in range(1, 5))
+        return (255, 255, 255, 255)
+
+    def _insert_peer_sorted(self, protocol_type, peer_section):
+        """Insert a new [Peer] section into the server config keeping peers sorted by IP.
+
+        Creates a timestamped backup of the config inside the container before
+        overwriting it, then rewrites the file with all [Peer] sections ordered
+        by their AllowedIPs address.
+        """
+        container_name = self._container_name(protocol_type)
+        config_path = self._resolve_config_path(protocol_type)
+
+        config = self._get_server_config(protocol_type)
+
+        # Backup current config inside the container before modifying it
+        ts = __import__('datetime').datetime.now().strftime('%Y%m%d_%H%M%S')
+        self.ssh.run_sudo_command(
+            f"docker exec -i {container_name} cp {config_path} {config_path}.bak.{ts}"
+        )
+
+        head, _, rest = config.partition('[Peer]')
+        blocks = []
+        if rest:
+            for chunk in rest.split('[Peer]'):
+                chunk = chunk.strip()
+                if chunk:
+                    blocks.append('[Peer]\n' + chunk)
+
+        blocks.append(peer_section.strip())
+        blocks.sort(key=self._peer_block_ip)
+
+        new_config = head.rstrip('\n') + '\n\n' + '\n\n'.join(blocks) + '\n'
+
+        self.ssh.upload_file(new_config, "/tmp/_amnz_add_peer.conf")
+        self.ssh.run_sudo_command(
+            f"docker cp /tmp/_amnz_add_peer.conf {container_name}:{config_path}"
+        )
+        self.ssh.run_command("rm -f /tmp/_amnz_add_peer.conf")
+
     def _extract_ipv4(self, value):
         """Extract the first IPv4 address from AllowedIPs/clientIp-like values."""
         if not value:
@@ -1000,11 +1045,8 @@ PresharedKey = {psk}
 AllowedIPs = {client_ip}/32
 
 """
-        # Append peer to server config
-        escaped_peer = peer_section.replace("'", "'\\''")
-        self.ssh.run_sudo_command(
-            f"docker exec -i {container_name} bash -c 'echo \"{escaped_peer}\" >> {config_path}'"
-        )
+        # Insert peer into server config, keeping peers sorted by IP (with backup)
+        self._insert_peer_sorted(protocol_type, peer_section)
 
         # Sync config without restart
         self.ssh.run_sudo_command(
