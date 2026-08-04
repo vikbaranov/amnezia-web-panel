@@ -931,6 +931,7 @@
     let currentConfig = '';
     let currentVpnLink = '';
     let currentConfigName = 'connection';
+    let currentConfigClientId = null;
     let installedProtocols = {};
     let currentProtocolStatus = {};
     let installedAppsLoading = true;
@@ -2044,8 +2045,9 @@
                             </div>
                         </div>
                         <div class="client-actions">
+                            <button class="btn btn-secondary btn-sm btn-icon" onclick="startRenameConnection('${escapeJs(client.clientId)}', this)" title="${_('rename')}">✏️</button>
                             <button class="btn btn-secondary btn-sm btn-icon" onclick="showConnectionConfig('${escapeJs(client.clientId)}', '${escapeJs(name)}', ${!!userData.clientPrivateKey || proto === 'xray' || proto === 'telemt'})" title="${_('config')}">📄</button>
-                            ${proto === 'telemt' ? `<button class="btn btn-secondary btn-sm btn-icon" onclick="editConnection('${escapeJs(client.clientId)}')" title="${_('edit')}">✏️</button>` : ''}
+                            ${proto === 'telemt' ? `<button class="btn btn-secondary btn-sm btn-icon" onclick="editConnection('${escapeJs(client.clientId)}')" title="${_('edit')}">⚙️</button>` : ''}
                             <button class="btn btn-secondary btn-sm btn-icon" onclick="toggleConnection('${escapeJs(client.clientId)}', ${!enabled})" title="${toggleTitle}">${toggleIcon}</button>
                             <button class="btn btn-danger btn-sm btn-icon" onclick="removeConnection('${escapeJs(client.clientId)}')" title="${_('delete')}">🗑</button>
                         </div>
@@ -2171,8 +2173,57 @@
         }
     }
 
+    function startRenameConnection(clientId, btn) {
+        const item = btn.closest('.client-item');
+        const nameEl = item.querySelector('.client-name');
+        const oldName = nameEl.textContent;
+        nameEl.innerHTML = `
+            <span class="rename-editor" style="display:inline-flex;gap:4px;align-items:center;">
+                <input type="text" class="form-input" style="padding:2px 8px;font-size:0.85rem;width:160px;height:auto;" value="${escapeHtml(oldName)}">
+                <button class="btn btn-secondary btn-sm btn-icon" title="${_('save')}">✔</button>
+                <button class="btn btn-secondary btn-sm btn-icon rename-cancel" title="${_('cancel')}">✖</button>
+            </span>
+        `;
+        const input = nameEl.querySelector('input');
+        const saveBtn = nameEl.querySelector('button:not(.rename-cancel)');
+        const cancelBtn = nameEl.querySelector('.rename-cancel');
+        saveBtn.addEventListener('click', () => saveRenameConnection(clientId, input.value));
+        cancelBtn.addEventListener('click', () => loadConnections());
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') saveRenameConnection(clientId, input.value);
+            if (e.key === 'Escape') loadConnections();
+        });
+        input.focus();
+        input.select();
+    }
+
+    async function saveRenameConnection(clientId, rawName) {
+        const proto = document.getElementById('connProtoSelect').value;
+        const newName = (rawName || '').trim();
+        if (!newName) {
+            showToast(_('enter_connection_name'), 'error');
+            return;
+        }
+        try {
+            const result = await apiCall(`/api/servers/${SERVER_ID}/connections/rename`, 'POST', {
+                protocol: proto, client_id: clientId, new_name: newName,
+            });
+            showToast(_('connection_renamed'), 'success');
+            // If the config modal is open for this connection, retitle it too.
+            if (currentConfigClientId === clientId &&
+                document.getElementById('configModal').classList.contains('active')) {
+                document.getElementById('configModalTitle').textContent = `${_('config')} — ${result.name}`;
+                currentConfigName = result.name.replace(/\s+/g, '_');
+            }
+            loadConnections();
+        } catch (err) {
+            showToast(_('error') + ': ' + err.message, 'error');
+        }
+    }
+
     async function showConnectionConfig(clientId, connName, hasKey) {
         const proto = document.getElementById('connProtoSelect').value;
+        currentConfigClientId = clientId;
 
         // Restore tabs visibility first
         document.getElementById('panel-vpn').style.display = (proto === 'telemt' ? 'none' : '');
