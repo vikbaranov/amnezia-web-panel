@@ -390,5 +390,8 @@
   "backup_created": "Backup created",
   "no_backups": "No backups yet",
   "no_backups_desc": "Create the first backup for this protocol.",
-  "refresh": "Refresh"
+  "refresh": "Refresh",
+  "rename": "تغییر نام",
+  "connection_renamed": "اتصال تغییر نام یافت",
+  "enter_connection_name": "نام جدید اتصال را وارد کنید"
 }
