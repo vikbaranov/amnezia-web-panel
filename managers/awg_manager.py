@@ -1379,6 +1379,32 @@ AllowedIPs = {client_ip}/32
 
         return True
 
+    def rename_client(self, protocol_type, client_id, new_name):
+        """Rename a client. The name lives only in the clientsTable
+        (userData.clientName); keys, IPs and the WireGuard config itself
+        are untouched, so existing configs keep working."""
+        clients_table = self._get_clients_table(protocol_type)
+        client = next((c for c in clients_table if c.get('clientId') == client_id), None)
+        if client is None:
+            # Peer added via the native Amnezia app is not in the table yet —
+            # persist a minimal entry so the chosen name sticks.
+            conf_peers = self._parse_peers_from_config(protocol_type)
+            if client_id not in conf_peers:
+                raise RuntimeError('Client not found')
+            client = {
+                'clientId': client_id,
+                'userData': {
+                    'clientName': new_name,
+                    'clientPrivateKey': '',
+                    'externalClient': True,
+                }
+            }
+            clients_table.append(client)
+        else:
+            client.setdefault('userData', {})['clientName'] = new_name
+        self._save_clients_table(protocol_type, clients_table)
+        return {'status': 'success', 'name': new_name}
+
     def get_server_status(self, protocol_type):
         """Get detailed status of the AWG server."""
         container_name = self._container_name(protocol_type)
