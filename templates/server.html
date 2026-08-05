@@ -829,13 +829,16 @@
         <!-- Config Panel -->
         <div class="config-panel active" id="panel-conf">
             <div class="config-display">
-                <div class="config-text" id="configText"></div>
+                <textarea class="config-text" id="configText" spellcheck="false" style="width:100%;min-height:220px;resize:vertical;font-family:monospace;"></textarea>
                 <div class="config-actions">
-                    <button class="btn btn-secondary btn-sm" onclick="copyToClipboard(currentConfig)" style="flex:1">
+                    <button class="btn btn-secondary btn-sm" onclick="copyToClipboard(document.getElementById('configText').value)" style="flex:1">
                         {{ _('copy') }}
                     </button>
+                    <button class="btn btn-primary btn-sm" id="saveConnConfigBtn" onclick="saveConnectionConfig()" style="flex:1">
+                        {{ _('save') }}
+                    </button>
                     <button class="btn btn-primary btn-sm"
-                        onclick="downloadFile(currentConfig, currentConfigName + '.conf')" style="flex:1">
+                        onclick="downloadFile(document.getElementById('configText').value, currentConfigName + '.conf')" style="flex:1">
                         {{ _('download_conf') }}
                     </button>
                 </div>
@@ -2095,8 +2098,9 @@
                     currentConfig = result.config;
                     currentVpnLink = result.vpn_link || '';
                     currentConfigName = connName.replace(/\s+/g, '_');
+                    currentConfigClientId = result.client_id || null;
                     document.getElementById('configModalTitle').textContent = `${_('config')} — ${connName}`;
-                    document.getElementById('configText').textContent = result.config;
+                    const cfgTa = document.getElementById('configText'); cfgTa.value = result.config; cfgTa.readOnly = false;
                     document.getElementById('vpnLinkText').textContent = currentVpnLink;
                     document.getElementById('panel-vpn').style.display = (proto === 'telemt' ? 'none' : '');
                     document.querySelectorAll('.config-tab')[1].style.display = (proto === 'telemt' ? 'none' : '');
@@ -2221,9 +2225,33 @@
         }
     }
 
+    async function saveConnectionConfig() {
+        const proto = document.getElementById('connProtoSelect').value;
+        const text = document.getElementById('configText').value;
+        if (!text.trim()) {
+            showToast(_('error'), 'error');
+            return;
+        }
+        try {
+            const result = await apiCall(`/api/servers/${SERVER_ID}/connections/config/save`, 'POST', {
+                protocol: proto, client_id: currentConfigClientId, config: text,
+            });
+            currentConfig = text;
+            currentVpnLink = result.vpn_link || '';
+            document.getElementById('vpnLinkText').textContent = currentVpnLink;
+            generateQR(text);
+            showToast(_('config_saved'), 'success');
+        } catch (err) {
+            showToast(_('error') + ': ' + err.message, 'error');
+        }
+    }
+
     async function showConnectionConfig(clientId, connName, hasKey) {
         const proto = document.getElementById('connProtoSelect').value;
         currentConfigClientId = clientId;
+        const canEditCfg = ['awg', 'awg2', 'awg_legacy', 'wireguard'].includes(protoBase(proto));
+        document.getElementById('saveConnConfigBtn').style.display = canEditCfg ? '' : 'none';
+        document.getElementById('configText').readOnly = !canEditCfg;
 
         // Restore tabs visibility first
         document.getElementById('panel-vpn').style.display = (proto === 'telemt' ? 'none' : '');
@@ -2235,9 +2263,10 @@
         if (!hasKey) {
             document.getElementById('configModalTitle').textContent = `${_('config')} — ${connName}`;
             currentConfig = '';
+            document.getElementById('saveConnConfigBtn').style.display = 'none';
             currentVpnLink = '';
             currentConfigName = connName.replace(/\s+/g, '_');
-            document.getElementById('configText').innerHTML = `<div style="padding:var(--space-md);background:var(--bg-primary);border-radius:var(--radius-md);border:1px solid var(--border-color);"><div style="font-size:1.4rem;margin-bottom:var(--space-sm);">⚠️</div><div style="font-weight:600;margin-bottom:var(--space-sm);">${_('config_unavailable')}</div><div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;">${_('config_unavailable_desc').replace(/\\n/g, '<br>')}<br><br><strong>${_('client_public_key')}</strong><br><code style="word-break:break-all;font-size:0.78rem;">${escapeHtml(clientId)}</code></div></div>`;
+            const cfgTa = document.getElementById('configText'); cfgTa.value = `${_('config_unavailable')}\n\n${_('client_public_key')}: ${clientId}`; cfgTa.readOnly = true;
             document.getElementById('vpnLinkText').textContent = '';
             document.getElementById('panel-vpn').style.display = 'none';
             document.getElementById('panel-qr').style.display = 'none';
@@ -2258,7 +2287,7 @@
                 currentVpnLink = result.vpn_link || '';
                 currentConfigName = connName.replace(/\s+/g, '_');
                 document.getElementById('configModalTitle').textContent = `${_('config')} — ${connName}`;
-                document.getElementById('configText').textContent = result.config;
+                const cfgTa = document.getElementById('configText'); cfgTa.value = result.config; cfgTa.readOnly = false;
                 document.getElementById('vpnLinkText').textContent = currentVpnLink;
                 switchConfigTab('conf');
                 openModal('configModal');
