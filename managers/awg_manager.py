@@ -685,8 +685,25 @@ tail -f /dev/null
             raise RuntimeError(f"Failed to get server config: {err}")
         return out
 
+    @staticmethod
+    def _sanitize_server_config(config_content):
+        """awg-quick chokes on a bare `DNS =` key in the server config (it calls
+        resolvconf, which is missing in the container, and the interface goes
+        down). Convert active `DNS = ...` lines into `# DNS = ...` comments:
+        the panel still reads them via _get_dns(), but quick-tools ignore them."""
+        lines = []
+        for line in config_content.split('\n'):
+            stripped = line.strip()
+            if stripped.startswith('DNS') and '=' in stripped and not stripped.startswith('#'):
+                indent = line[:len(line) - len(line.lstrip())]
+                lines.append(f"{indent}# {stripped}")
+            else:
+                lines.append(line)
+        return '\n'.join(lines)
+
     def save_server_config(self, protocol_type, config_content):
         """Save the server WireGuard config and restart container."""
+        config_content = self._sanitize_server_config(config_content)
         container_name = self._container_name(protocol_type)
         config_path = self._resolve_config_path(protocol_type)
 
@@ -1383,6 +1400,8 @@ AllowedIPs = {client_ip}/32
             server_config = self._get_server_config(protocol_type)
             for line in server_config.split('\n'):
                 stripped = line.strip()
+                if stripped.startswith('#'):
+                    stripped = stripped.lstrip('#').strip()
                 if stripped.startswith('DNS') and '=' in stripped:
                     return stripped.split('=', 1)[1].strip()
         except Exception:
