@@ -636,14 +636,8 @@ tail -f /dev/null
         # Get next available IP
         client_ip = self._get_next_ip()
 
-        dns1 = WG_DEFAULTS['dns1']
-        dns2 = WG_DEFAULTS['dns2']
-        
-        # Check if AmneziaDNS is installed
-        out, _, _ = self.ssh.run_sudo_command("docker ps -a --filter name=^amnezia-dns$ --format '{{.Names}}'")
-        if 'amnezia-dns' in out:
-            dns1 = '172.29.172.254'
-            
+        dns = self._get_dns()
+
         mtu = WG_DEFAULTS['mtu']
 
         peer_section = f"""
@@ -680,7 +674,7 @@ AllowedIPs = {client_ip}/32
         # Build client config
         client_config = f"""[Interface]
 Address = {client_ip}/32
-DNS = {dns1}, {dns2}
+DNS = {dns}
 PrivateKey = {client_priv_key}
 MTU = {mtu}
 
@@ -706,6 +700,8 @@ PersistentKeepalive = 25
             raise RuntimeError(f"Client {client_id} not found")
 
         ud = client.get('userData', {})
+        if ud.get('customConfig'):
+            return ud['customConfig']
         client_priv_key = ud.get('clientPrivateKey', '')
         client_ip = ud.get('clientIp', '')
         psk = ud.get('psk', '')
@@ -719,19 +715,13 @@ PersistentKeepalive = 25
 
         port = self._get_listen_port()
 
-        dns1 = WG_DEFAULTS['dns1']
-        dns2 = WG_DEFAULTS['dns2']
-        
-        # Check if AmneziaDNS is installed
-        out, _, _ = self.ssh.run_sudo_command("docker ps -a --filter name=^amnezia-dns$ --format '{{.Names}}'")
-        if 'amnezia-dns' in out:
-            dns1 = '172.29.172.254'
-            
+        dns = self._get_dns(ud)
+
         mtu = WG_DEFAULTS['mtu']
 
         config = f"""[Interface]
 Address = {client_ip}/32
-DNS = {dns1}, {dns2}
+DNS = {dns}
 PrivateKey = {client_priv_key}
 MTU = {mtu}
 
@@ -816,6 +806,50 @@ AllowedIPs = {client_ip}/32
         clients_table = [c for c in clients_table if c.get('clientId') != client_id]
         self._save_clients_table(clients_table)
         return True
+
+    def _get_dns(self, user_data=None):
+        """DNS servers for generated client configs.
+
+        Priority: per-client override (userData.dns) > `DNS = ...` line in the
+        server config > AmneziaDNS container address > built-in defaults.
+        """
+        if user_data and user_data.get('dns'):
+            return user_data['dns']
+        try:
+            server_config = self._get_server_config()
+            for line in server_config.split('\n'):
+                stripped = line.strip()
+                if stripped.startswith('DNS') and '=' in stripped:
+                    return stripped.split('=', 1)[1].strip()
+        except Exception:
+            pass
+        dns1 = WG_DEFAULTS['dns1']
+        dns2 = WG_DEFAULTS['dns2']
+        out, _, _ = self.ssh.run_sudo_command("docker ps -a --filter name=^amnezia-dns$ --format '{{.Names}}'")
+        if 'amnezia-dns' in out:
+            dns1 = '172.29.172.254'
+        return f"{dns1}, {dns2}"
+
+    def save_client_config(self, client_id, config_text):
+        """Persist a manually edited client config in clientsTable
+        (userData.customConfig + userData.dns override)."""
+        config_text = (config_text or '').strip()
+        if not config_text:
+            raise RuntimeError('Config is empty')
+        clients_table = self._get_clients_table()
+        client = next((c for c in clients_table if c.get('clientId') == client_id), None)
+        if client is None:
+            raise RuntimeError('Client not found')
+        ud = client.setdefault('userData', {})
+        ud['customConfig'] = config_text
+        ud.pop('dns', None)
+        for line in config_text.split('\n'):
+            stripped = line.strip()
+            if stripped.startswith('DNS') and '=' in stripped:
+                ud['dns'] = stripped.split('=', 1)[1].strip()
+                break
+        self._save_clients_table(clients_table)
+        return {'status': 'success'}
 
     def rename_client(self, client_id, new_name):
         """Rename a client. The name lives only in the clientsTable
