@@ -1074,20 +1074,14 @@ AllowedIPs = {client_ip}/32
         if awg_params.get('port'):
             port = awg_params['port']
 
-        dns1 = AWG_DEFAULTS['dns1']
-        dns2 = AWG_DEFAULTS['dns2']
-        
-        # Check if AmneziaDNS is installed
-        out, _, _ = self.ssh.run_sudo_command("docker ps -a --filter name=^amnezia-dns$ --format '{{.Names}}'")
-        if 'amnezia-dns' in out:
-            dns1 = '172.29.172.254'
-            
+        dns = self._get_dns(protocol_type)
+
         mtu = AWG_DEFAULTS['mtu']
 
         # Standard fields
         config_lines = [
             f"Address = {client_ip}/32",
-            f"DNS = {dns1}, {dns2}",
+            f"DNS = {dns}",
             f"PrivateKey = {client_priv_key}",
             f"MTU = {mtu}"
         ]
@@ -1151,6 +1145,8 @@ PersistentKeepalive = 25
             raise RuntimeError(f"Client {client_id} not found")
 
         ud = client.get('userData', {})
+        if ud.get('customConfig'):
+            return ud['customConfig']
         client_priv_key = ud.get('clientPrivateKey', '')
         client_ip = ud.get('clientIp', '')
         psk = ud.get('psk', '')
@@ -1166,20 +1162,14 @@ PersistentKeepalive = 25
         if awg_params.get('port'):
             port = awg_params['port']
 
-        dns1 = AWG_DEFAULTS['dns1']
-        dns2 = AWG_DEFAULTS['dns2']
-        
-        # Check if AmneziaDNS is installed
-        out, _, _ = self.ssh.run_sudo_command("docker ps -a --filter name=^amnezia-dns$ --format '{{.Names}}'")
-        if 'amnezia-dns' in out:
-            dns1 = '172.29.172.254'
-            
+        dns = self._get_dns(protocol_type, ud)
+
         mtu = AWG_DEFAULTS['mtu']
 
         # Standard fields
         config_lines = [
             f"Address = {client_ip}/32",
-            f"DNS = {dns1}, {dns2}",
+            f"DNS = {dns}",
             f"PrivateKey = {client_priv_key}",
             f"MTU = {mtu}"
         ]
@@ -1378,6 +1368,54 @@ AllowedIPs = {client_ip}/32
         self._save_clients_table(protocol_type, clients_table)
 
         return True
+
+    def _get_dns(self, protocol_type, user_data=None):
+        """DNS servers for generated client configs.
+
+        Priority: per-client override (userData.dns, set by saving an edited
+        config) > `DNS = ...` line in the server config (wg-quick-style key,
+        stripped by awg-quick so it does not affect syncconf) > AmneziaDNS
+        container address > built-in defaults.
+        """
+        if user_data and user_data.get('dns'):
+            return user_data['dns']
+        try:
+            server_config = self._get_server_config(protocol_type)
+            for line in server_config.split('\n'):
+                stripped = line.strip()
+                if stripped.startswith('DNS') and '=' in stripped:
+                    return stripped.split('=', 1)[1].strip()
+        except Exception:
+            pass
+        dns1 = AWG_DEFAULTS['dns1']
+        dns2 = AWG_DEFAULTS['dns2']
+        out, _, _ = self.ssh.run_sudo_command("docker ps -a --filter name=^amnezia-dns$ --format '{{.Names}}'")
+        if 'amnezia-dns' in out:
+            dns1 = '172.29.172.254'
+        return f"{dns1}, {dns2}"
+
+    def save_client_config(self, protocol_type, client_id, config_text):
+        """Persist a manually edited client config. Stored verbatim in
+        clientsTable (userData.customConfig) and returned by get_client_config
+        from now on; the DNS line is indexed into userData.dns as the
+        per-client override for future regenerations."""
+        config_text = (config_text or '').strip()
+        if not config_text:
+            raise RuntimeError('Config is empty')
+        clients_table = self._get_clients_table(protocol_type)
+        client = next((c for c in clients_table if c.get('clientId') == client_id), None)
+        if client is None:
+            raise RuntimeError('Client not found')
+        ud = client.setdefault('userData', {})
+        ud['customConfig'] = config_text
+        ud.pop('dns', None)
+        for line in config_text.split('\n'):
+            stripped = line.strip()
+            if stripped.startswith('DNS') and '=' in stripped:
+                ud['dns'] = stripped.split('=', 1)[1].strip()
+                break
+        self._save_clients_table(protocol_type, clients_table)
+        return {'status': 'success'}
 
     def rename_client(self, protocol_type, client_id, new_name):
         """Rename a client. The name lives only in the clientsTable
