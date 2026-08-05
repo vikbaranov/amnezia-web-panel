@@ -1544,6 +1544,11 @@ class RenameConnectionRequest(BaseModel):
     client_id: str = ''
     new_name: str = ''
 
+class SaveConnectionConfigRequest(BaseModel):
+    protocol: str = 'awg'
+    client_id: str = ''
+    config: str = ''
+
 
 class ToggleConnectionRequest(BaseModel):
     protocol: str = 'awg'
@@ -3190,6 +3195,31 @@ async def api_rename_connection(request: Request, server_id: int, req: RenameCon
         return {'status': 'success', 'name': stored_name, 'client_id': new_client_id}
     except Exception as e:
         logger.exception("Error renaming connection")
+        return JSONResponse({'error': str(e)}, status_code=500)
+
+
+@app.post('/api/servers/{server_id}/connections/config/save', tags=["Connections"])
+async def api_save_connection_config(request: Request, server_id: int, req: SaveConnectionConfigRequest):
+    if not _check_admin(request):
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+    try:
+        data = load_data()
+        if server_id >= len(data['servers']):
+            return JSONResponse({'error': 'Server not found'}, status_code=404)
+        server = data['servers'][server_id]
+        config_text = (req.config or '').strip()
+        if not config_text:
+            return JSONResponse({'error': 'Config is required'}, status_code=400)
+        if not req.client_id:
+            return JSONResponse({'error': 'Client ID is required'}, status_code=400)
+        ssh = get_ssh(server)
+        ssh.connect()
+        manager = get_protocol_manager(ssh, req.protocol)
+        _manager_call(manager, 'save_client_config', req.protocol, req.client_id, config_text)
+        ssh.disconnect()
+        return {'status': 'success', 'vpn_link': generate_vpn_link(config_text)}
+    except Exception as e:
+        logger.exception("Error saving connection config")
         return JSONResponse({'error': str(e)}, status_code=500)
 
 
