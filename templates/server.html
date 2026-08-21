@@ -2025,8 +2025,10 @@
                     if (userData.expiry) metaHtml += `<span class="badge" style="font-size:0.65rem;">⌛ ${formatDate(userData.expiry)}</span>`;
                 } else {
                     if (handshake) metaHtml += `<span>🤝 ${handshake}</span>`;
-                    if (received) metaHtml += `<span class="traffic-badge traffic-down">↓ ${received}</span>`;
-                    if (sent) metaHtml += `<span class="traffic-badge traffic-up">↑ ${sent}</span>`;
+                    // awg show reports transfer from the SERVER perspective:
+                    // "received" = client upload, "sent" = client download.
+                    if (sent) metaHtml += `<span class="traffic-badge traffic-down">↓ ${sent}</span>`;
+                    if (received) metaHtml += `<span class="traffic-badge traffic-up">↑ ${received}</span>`;
                 }
 
                 if (!enabled) metaHtml += `<span class="badge badge-danger" style="font-size:0.65rem">${_('stop')}</span>`;
