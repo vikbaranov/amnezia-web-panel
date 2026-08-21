@@ -43,6 +43,12 @@ from managers.xray_manager import XrayManager
 from managers.wireguard_manager import WireGuardManager
 from managers.backup_manager import BackupManager
 import telegram_bot as tg_bot
+from connection_service import (
+    ConnectionService,
+    DEFAULT_SELF_SERVICE_SETTINGS,
+    RateLimitError,
+    SelfServiceError,
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -178,6 +184,11 @@ def load_data():
             'remnawave_protocol': 'awg'
         }
     })
+    self_service = data['settings'].setdefault('self_service', dict(DEFAULT_SELF_SERVICE_SETTINGS))
+    for key, value in DEFAULT_SELF_SERVICE_SETTINGS.items():
+        self_service.setdefault(key, value)
+    for server in data.get('servers', []):
+        server.setdefault('self_service_enabled', False)
     return data
 
 
@@ -1015,6 +1026,26 @@ def generate_vpn_link(config_text):
     return f"vpn://{b64}"
 
 
+self_service_connections = ConnectionService(
+    load_data=load_data,
+    save_data=save_data,
+    data_lock=DATA_LOCK,
+    get_ssh=get_ssh,
+    get_protocol_manager=get_protocol_manager,
+    manager_call=_manager_call,
+    generate_vpn_link=generate_vpn_link,
+)
+
+
+def _self_service_error_response(exc):
+    if isinstance(exc, RateLimitError):
+        return JSONResponse({'error': str(exc)}, status_code=429)
+    if isinstance(exc, SelfServiceError):
+        return JSONResponse({'error': str(exc)}, status_code=exc.status_code)
+    logger.exception("Unexpected self-service error")
+    return JSONResponse({'error': str(exc)}, status_code=500)
+
+
 # ===================== API tokens =====================
 
 API_TOKEN_PREFIX = 'awp_'  # "Amnezia Web Panel" — makes tokens visually distinct in logs / configs
@@ -1436,6 +1467,7 @@ class EditServerRequest(BaseModel):
     # fields can be omitted to keep current auth unchanged.
     password: Optional[str] = None
     private_key: Optional[str] = None
+    self_service_enabled: Optional[bool] = None
 
 
 class ReorderServersRequest(BaseModel):
@@ -1582,6 +1614,22 @@ class TelegramSettings(BaseModel):
     enabled: bool = False
 
 
+class SelfServiceSettings(BaseModel):
+    enabled: bool = False
+    web_enabled: bool = True
+    telegram_enabled: bool = True
+    max_connections_per_user: int = 5
+    rate_limit_count: int = 3
+    rate_limit_window_seconds: int = 60
+    allowed_protocols: List[str] = ['awg', 'awg2']
+
+
+class SelfServiceConnectionRequest(BaseModel):
+    server_id: int
+    protocol: str = 'awg'
+    name: str = 'VPN Connection'
+
+
 
 
 class UpdateUserRequest(BaseModel):
@@ -1601,6 +1649,7 @@ class SaveSettingsRequest(BaseModel):
     captcha: CaptchaSettings
     telegram: TelegramSettings
     ssl: SSLSettings
+    self_service: SelfServiceSettings = SelfServiceSettings()
 
 
 class ToggleUserRequest(BaseModel):
@@ -1717,7 +1766,7 @@ async def startup():
     tg_cfg = data.get('settings', {}).get('telegram', {})
     if tg_cfg.get('enabled') and tg_cfg.get('token'):
         logger.info("Starting Telegram bot from saved settings...")
-        tg_bot.launch_bot(tg_cfg['token'], load_data, generate_vpn_link, save_data)
+        tg_bot.launch_bot(tg_cfg['token'], load_data, generate_vpn_link, save_data, self_service_connections)
 
 
 def _scrape_server_traffic(server, sid, my_conns):
@@ -2093,6 +2142,8 @@ async def api_edit_server(request: Request, server_id: int, req: EditServerReque
         server['password'] = new_pass
         server['private_key'] = new_key
         server['server_info'] = server_info
+        if req.self_service_enabled is not None:
+            server['self_service_enabled'] = bool(req.self_service_enabled)
         save_data(data)
         return {'status': 'success', 'server_info': server_info}
     except Exception as e:
@@ -3105,12 +3156,17 @@ async def api_get_connection_config(request: Request, server_id: int, req: Conne
         proto_info = server.get('protocols', {}).get(req.protocol, {})
         port = proto_info.get('port', '55424')
         ssh = get_ssh(server)
-        ssh.connect()
-        manager = get_protocol_manager(ssh, req.protocol)
-        config = _manager_call(manager, 'get_client_config', req.protocol, req.client_id, server['host'], port)
-        ssh.disconnect()
-        vpn_link = generate_vpn_link(config) if config else ''
-        return {'config': config, 'vpn_link': vpn_link}
+        try:
+            await asyncio.to_thread(ssh.connect)
+            manager = get_protocol_manager(ssh, req.protocol)
+            config = await asyncio.to_thread(_manager_call, manager, 'get_client_config', req.protocol, req.client_id, server['host'], port)
+            vpn_link = generate_vpn_link(config) if config else ''
+            return {'config': config, 'vpn_link': vpn_link}
+        finally:
+            try:
+                await asyncio.to_thread(ssh.disconnect)
+            except Exception:
+                pass
     except Exception as e:
         logger.exception("Error getting connection config")
         return JSONResponse({'error': str(e)}, status_code=500)
@@ -3461,6 +3517,45 @@ async def api_my_connections(request: Request):
     return {'connections': conns}
 
 
+@app.get('/api/my/connections/options', tags=["Self-service"])
+async def api_my_connection_options(request: Request):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+    try:
+        return await self_service_connections.get_self_service_options(user['id'], 'web')
+    except Exception as exc:
+        return _self_service_error_response(exc)
+
+
+@app.post('/api/my/connections/add', tags=["Self-service"])
+async def api_my_connection_add(request: Request, req: SelfServiceConnectionRequest):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+    try:
+        return await self_service_connections.create_user_connection(
+            user['id'],
+            req.server_id,
+            req.protocol,
+            req.name,
+            'web',
+        )
+    except Exception as exc:
+        return _self_service_error_response(exc)
+
+
+@app.post('/api/my/connections/{connection_id}/delete', tags=["Self-service"])
+async def api_my_connection_delete(request: Request, connection_id: str):
+    user = get_current_user(request)
+    if not user:
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+    try:
+        return await self_service_connections.delete_user_connection(user['id'], connection_id, 'web')
+    except Exception as exc:
+        return _self_service_error_response(exc)
+
+
 @app.post('/api/users/{user_id}/share/setup', tags=["Users"])
 async def api_user_share_setup(user_id: str, req: ShareSetupRequest, request: Request):
     if not _check_admin(request):
@@ -3589,13 +3684,17 @@ async def api_my_connection_config(request: Request, connection_id: str):
         proto_info = server.get('protocols', {}).get(conn['protocol'], {})
         port = proto_info.get('port', '55424')
         ssh = get_ssh(server)
-        ssh.connect()
-        # Use appropriate manager for the protocol (fixes Telemt/Xray not working for users)
-        manager = get_protocol_manager(ssh, conn['protocol'])
-        config = _manager_call(manager, 'get_client_config', conn['protocol'], conn['client_id'], server['host'], port)
-        ssh.disconnect()
-        vpn_link = generate_vpn_link(config) if config else ''
-        return {'config': config, 'vpn_link': vpn_link}
+        try:
+            await asyncio.to_thread(ssh.connect)
+            manager = get_protocol_manager(ssh, conn['protocol'])
+            config = await asyncio.to_thread(_manager_call, manager, 'get_client_config', conn['protocol'], conn['client_id'], server['host'], port)
+            vpn_link = generate_vpn_link(config) if config else ''
+            return {'config': config, 'vpn_link': vpn_link}
+        finally:
+            try:
+                await asyncio.to_thread(ssh.disconnect)
+            except Exception:
+                pass
     except Exception as e:
         logger.exception("Error getting my connection config")
         return JSONResponse({'error': str(e)}, status_code=500)
@@ -3736,6 +3835,7 @@ async def save_settings(request: Request, payload: SaveSettingsRequest):
     data['settings']['captcha'] = payload.captcha.dict()
     data['settings']['telegram'] = payload.telegram.dict()
     data['settings']['ssl'] = payload.ssl.dict()
+    data['settings']['self_service'] = payload.self_service.dict()
     save_data(data)
     logger.info("Settings saved (including captcha and telegram)")
 
@@ -3744,7 +3844,7 @@ async def save_settings(request: Request, payload: SaveSettingsRequest):
     if tg_cfg.enabled and tg_cfg.token:
         if not tg_bot.is_running():
             logger.info("Starting Telegram bot (settings save)...")
-            tg_bot.launch_bot(tg_cfg.token, load_data, generate_vpn_link, save_data)
+            tg_bot.launch_bot(tg_cfg.token, load_data, generate_vpn_link, save_data, self_service_connections)
     else:
         if tg_bot.is_running():
             logger.info("Stopping Telegram bot (settings save)...")
@@ -3771,7 +3871,7 @@ async def api_telegram_toggle(request: Request):
         save_data(data)
         return {'status': 'stopped', 'bot_running': False}
     else:
-        tg_bot.launch_bot(token, load_data, generate_vpn_link, save_data)
+        tg_bot.launch_bot(token, load_data, generate_vpn_link, save_data, self_service_connections)
         tg_cfg['enabled'] = True
         data['settings']['telegram'] = tg_cfg
         save_data(data)

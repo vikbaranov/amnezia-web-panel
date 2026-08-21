@@ -235,6 +235,13 @@
             return data;
         }
 
+        /* ===== Escape HTML ===== */
+        function escapeHTML(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
         /* ===== Copy to clipboard ===== */
         async function copyToClipboard(text) {
             try {

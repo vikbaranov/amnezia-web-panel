@@ -15,6 +15,7 @@ import struct
 import hashlib
 import logging
 import re
+import ipaddress
 from base64 import b64encode, b64decode
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
 from cryptography.hazmat.primitives import serialization
@@ -811,28 +812,15 @@ tail -f /dev/null
         return ips
 
     def _get_next_ip(self, protocol_type):
-        """Calculate the next available IP for a new client."""
-        used_ips = self._get_used_ips(protocol_type)
-        if not used_ips:
-            base = self._get_subnet_base(protocol_type)
-            parts = base.split('.')
-            parts[3] = '2'
-            return '.'.join(parts)
-
-        # Get the last used IP and increment
-        last_ip = used_ips[-1]
-        parts = last_ip.split('.')
-        last_octet = int(parts[3])
-
-        if last_octet == 254:
-            next_octet = last_octet + 3
-        elif last_octet == 255:
-            next_octet = last_octet + 2
-        else:
-            next_octet = last_octet + 1
-
-        parts[3] = str(next_octet)
-        return '.'.join(parts)
+        """Calculate the first available host IP in the configured subnet."""
+        base = str(self._get_subnet_base(protocol_type))
+        network_spec = base if '/' in base else f'{base}/{self._get_subnet_cidr(protocol_type)}'
+        network = ipaddress.ip_network(network_spec, strict=False)
+        used_ips = {ipaddress.ip_address(ip) for ip in self._get_used_ips(protocol_type)}
+        for host in network.hosts():
+            if host not in used_ips:
+                return str(host)
+        raise RuntimeError(f'No free IP addresses available in subnet {network}')
 
     def _extract_ipv4(self, value):
         """Extract the first IPv4 address from AllowedIPs/clientIp-like values."""

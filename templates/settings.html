@@ -230,6 +230,64 @@
                 </div>
             </form>
         </div>
+
+        <!-- BLOCK Self-Service -->
+        <div class="card">
+            <h3 class="card-title" style="margin-bottom: var(--space-lg);">🔓 {{ _('self_service_title') }}</h3>
+            <details>
+                <summary style="cursor:pointer; font-weight:600; margin-bottom: var(--space-md);">{{ _('self_service_title') }}</summary>
+                <form id="selfServiceForm" style="margin-top: var(--space-md);">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="ss_enabled" {% if settings.get('self_service', {}).get('enabled') %}checked{% endif %}>
+                            {{ _('self_service_enabled') }}
+                        </label>
+                        <div class="form-hint">{{ _('self_service_enabled_desc') }}</div>
+                    </div>
+                    <div id="selfServiceFields" style="{% if not settings.get('self_service', {}).get('enabled') %}display:none;{% endif %} margin-top: var(--space-md);">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" id="ss_web_enabled" {% if settings.get('self_service', {}).get('web_enabled') %}checked{% endif %}>
+                                {{ _('self_service_web') }}
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" id="ss_telegram_enabled" {% if settings.get('self_service', {}).get('telegram_enabled') %}checked{% endif %}>
+                                {{ _('self_service_telegram') }}
+                            </label>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-md); margin-top: var(--space-md);">
+                            <div class="form-group">
+                                <label class="form-label">{{ _('self_service_max_conns') }}</label>
+                                <input type="number" class="form-input" id="ss_max_connections" value="{{ settings.get('self_service', {}).get('max_connections_per_user', 5) }}" min="1" placeholder="5">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">{{ _('self_service_rate_limit') }}</label>
+                                <input type="number" class="form-input" id="ss_rate_limit" value="{{ settings.get('self_service', {}).get('rate_limit_count', 3) }}" min="1" placeholder="3">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">{{ _('self_service_rate_window') }}</label>
+                                <input type="number" class="form-input" id="ss_rate_window" value="{{ settings.get('self_service', {}).get('rate_limit_window_seconds', 60) }}" min="1" placeholder="60">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">{{ _('self_service_protocols') }}</label>
+                            <div style="display: flex; gap: var(--space-lg);">
+                                <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
+                                    <input type="checkbox" id="ss_proto_awg" {% if 'awg' in (settings.get('self_service', {}).get('allowed_protocols') or ['awg']) %}checked{% endif %}>
+                                    AmneziaWG
+                                </label>
+                                <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
+                                    <input type="checkbox" id="ss_proto_awg2" {% if 'awg2' in (settings.get('self_service', {}).get('allowed_protocols') or ['awg']) %}checked{% endif %}>
+                                    AmneziaWG 2.0
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </details>
+        </div>
     </div>
 
     <!-- RIGHT COLUMN -->
@@ -317,7 +375,7 @@
                             <select class="form-select" name="remnawave_server_id" onchange="updateProtocolsForSync()">
                                 {% for s in servers %}
                                 <option value="{{ loop.index0 }}" {% if settings.sync.remnawave_server_id==loop.index0
-                                    %}selected{% endif %}>{{ s.name or s.host }}</option>
+                                    %}selected{% endif %}>{{ (s.name or s.host) | e }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -513,6 +571,10 @@
 
     document.getElementById('ssl_enabled').addEventListener('change', (e) => {
         document.getElementById('sslFields').style.display = e.target.checked ? 'block' : 'none';
+    });
+
+    document.getElementById('ss_enabled').addEventListener('change', (e) => {
+        document.getElementById('selfServiceFields').style.display = e.target.checked ? 'block' : 'none';
     });
 
     let tunnelStatusTimer = null;
@@ -716,8 +778,7 @@
         spinner.classList.remove('hidden');
 
         try {
-            const res = await fetch('/api/settings/sync_now', { method: 'POST' });
-            const data = await res.json();
+            const data = await apiCall('/api/settings/sync_now', 'POST');
             if (data.status === 'success') {
                 showToast(_('sync_success').replace('{}', data.count), 'success');
                 setTimeout(() => window.location.reload(), 1500);
@@ -745,8 +806,7 @@
         spinner.classList.remove('hidden');
 
         try {
-            const res = await fetch('/api/settings/sync_delete', { method: 'POST' });
-            const data = await res.json();
+            const data = await apiCall('/api/settings/sync_delete', 'POST');
             if (data.status === 'success') {
                 showToast(_('sync_deleted').replace('{}', data.count), 'success');
                 setTimeout(() => window.location.reload(), 1500);
@@ -805,13 +865,21 @@
             panel_port: parseInt(document.getElementById('panel_port').value || '5000')
         };
 
+        const self_service = {
+            enabled: document.getElementById('ss_enabled').checked,
+            web_enabled: document.getElementById('ss_web_enabled').checked,
+            telegram_enabled: document.getElementById('ss_telegram_enabled').checked,
+            max_connections_per_user: parseInt(document.getElementById('ss_max_connections').value || '5'),
+            rate_limit_count: parseInt(document.getElementById('ss_rate_limit').value || '3'),
+            rate_limit_window_seconds: parseInt(document.getElementById('ss_rate_window').value || '60'),
+            allowed_protocols: [
+                ...(document.getElementById('ss_proto_awg').checked ? ['awg'] : []),
+                ...(document.getElementById('ss_proto_awg2').checked ? ['awg2'] : []),
+            ],
+        };
+
         try {
-            const res = await fetch('/api/settings/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ appearance, sync, captcha, telegram, ssl })
-            });
-            if (!res.ok) throw new Error(_('error'));
+            await apiCall('/api/settings/save', 'POST', { appearance, sync, captcha, telegram, ssl, self_service });
             showToast(_('settings_saved'), 'success');
             setTimeout(() => window.location.reload(), 1000);
         } catch (err) {
@@ -829,9 +897,7 @@
         btn.disabled = true;
         spinner.classList.remove('hidden');
         try {
-            const res = await fetch('/api/settings/telegram/toggle', { method: 'POST' });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || _('error'));
+            const data = await apiCall('/api/settings/telegram/toggle', 'POST');
             const running = data.bot_running;
             document.getElementById('botStatusBadge').className = running ? 'badge badge-success' : 'badge badge-secondary';
             document.getElementById('botStatusBadge').textContent = running ? _('bot_running') : _('bot_stopped');
@@ -969,12 +1035,6 @@
                 </button>
             </div>
         `).join('');
-    }
-
-    function escapeHTML(s) {
-        return String(s ?? '').replace(/[&<>"']/g, c => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-        }[c]));
     }
 
     function openCreateTokenModal() {

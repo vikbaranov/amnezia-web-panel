@@ -316,6 +316,7 @@
   "api_tokens_name_placeholder": "e.g. Linear integration, CI bot, monitoring",
   "api_tokens_name_hint": "Used to identify this token in the list. The token value itself is generated for you.",
   "api_tokens_name_required": "Token name is required",
+  "name_required": "نام الزامی است",
   "api_tokens_created_title": "Token created",
   "api_tokens_value_label": "Token value",
   "api_tokens_warning_title": "This is the only time you'll see this token.",
