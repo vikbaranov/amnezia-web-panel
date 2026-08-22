@@ -235,11 +235,121 @@ class TestUserAddClientNameInputState(unittest.IsolatedAsyncioTestCase):
         self.assertIn('denied', text.lower())
 
 
-def _callback_update(chat_id, from_id, data_str):
+class TestUserDeleteConnection(unittest.IsolatedAsyncioTestCase):
+    """Test self-service user can delete their own connection via Telegram."""
+
+    def setUp(self):
+        tg_bot._callback_refs.clear()
+        tg_bot._pending_inputs.clear()
+        self.data = base_data()
+        self.data['user_connections'] = [
+            {'id': 'conn-1', 'user_id': 'user-1', 'server_id': 0, 'protocol': 'awg',
+             'client_id': 'client-1', 'name': 'MyPhone', 'created_by': 'self_service'},
+            {'id': 'conn-2', 'user_id': 'user-1', 'server_id': 0, 'protocol': 'awg',
+             'client_id': 'client-2', 'name': 'AdminPhone', 'created_by': 'admin'},
+        ]
+        self.load_data = lambda: self.data
+        self.api = AsyncMock()
+        self.api.send_message = AsyncMock(return_value={"result": {"message_id": 100}})
+        self.api.edit_message = AsyncMock()
+        self.api.answer_callback = AsyncMock()
+        self.api.call = AsyncMock()
+        self.mock_service = MagicMock()
+        self.mock_service.delete_user_connection = AsyncMock(return_value={'status': 'success'})
+
+    async def test_keyboard_shows_delete_only_for_self_service_connections(self):
+        conns = [c for c in self.data['user_connections'] if c['user_id'] == 'user-1']
+        kb = tg_bot._build_connections_keyboard(conns, self.data)
+        delete_buttons = [
+            btn for row in kb['inline_keyboard']
+            for btn in row if btn.get('text') == '🗑'
+        ]
+        self.assertEqual(len(delete_buttons), 1)
+
+    async def test_user_delete_shows_confirmation(self):
+        ref_key = tg_bot._ref('user_delete', {'conn_id': 'conn-1', 'name': 'MyPhone'})
+        msg = _callback_update(chat_id=111, from_id=111, data_str=ref_key)
+        await _dispatch_callback_with_service(self.api, msg, self.load_data, self.mock_service)
+        text = self.api.edit_message.call_args[0][2]
+        self.assertIn('delete', text.lower())
+        self.mock_service.delete_user_connection.assert_not_called()
+
+    async def test_user_delete_confirm_calls_service(self):
+        ref_key = tg_bot._ref('user_delete_confirm', {'conn_id': 'conn-1'})
+        msg = _callback_update(chat_id=111, from_id=111, data_str=ref_key)
+        await _dispatch_callback_with_service(self.api, msg, self.load_data, self.mock_service)
+        self.mock_service.delete_user_connection.assert_called_once()
+        args = self.mock_service.delete_user_connection.call_args
+        self.assertEqual(args[0][0], 'user-1')
+        self.assertEqual(args[0][1], 'conn-1')
+        self.assertEqual(args[0][2], 'telegram')
+
+    async def test_user_delete_rejects_unlinked_user(self):
+        ref_key = tg_bot._ref('user_delete_confirm', {'conn_id': 'conn-1'})
+        msg = _callback_update(chat_id=999, from_id=999, data_str=ref_key)
+        await _dispatch_callback_with_service(self.api, msg, self.load_data, self.mock_service)
+        self.mock_service.delete_user_connection.assert_not_called()
+
+
+class TestFindUserByUsername(unittest.IsolatedAsyncioTestCase):
+    """Telegram username (not just numeric ID) should resolve the panel user."""
+
+    def setUp(self):
+        self.data = base_data()
+        self.data['users'][0]['telegramId'] = '@alice'
+        self.load_data = lambda: self.data
+
+    def test_matches_stored_username(self):
+        user = tg_bot._find_user(self.load_data, '999', 'alice')
+        self.assertIsNotNone(user)
+        self.assertEqual(user['id'], 'user-1')
+
+    def test_matches_stored_username_with_at_prefix(self):
+        user = tg_bot._find_user(self.load_data, '999', '@alice')
+        self.assertIsNotNone(user)
+        self.assertEqual(user['id'], 'user-1')
+
+    def test_still_matches_numeric_id(self):
+        user = tg_bot._find_user(self.load_data, '222', None)
+        self.assertIsNotNone(user)
+        self.assertEqual(user['id'], 'user-2')
+
+    def test_no_match_without_username(self):
+        user = tg_bot._find_user(self.load_data, '999', None)
+        self.assertIsNone(user)
+
+
+class TestDispatchResolvesUsername(unittest.IsolatedAsyncioTestCase):
+    """A callback from a user whose telegramId is stored as a username resolves correctly."""
+
+    def setUp(self):
+        tg_bot._callback_refs.clear()
+        tg_bot._pending_inputs.clear()
+        self.data = base_data()
+        self.data['users'][0]['telegramId'] = '@alice'
+        self.load_data = lambda: self.data
+        self.api = AsyncMock()
+        self.api.send_message = AsyncMock()
+        self.api.edit_message = AsyncMock()
+        self.api.answer_callback = AsyncMock()
+
+    async def test_user_create_resolves_by_username(self):
+        msg = _callback_update(chat_id=999, from_id=999, data_str='user_create', username='alice')
+        await _dispatch_callback(self.api, msg, self.load_data)
+        self.api.edit_message.assert_called()
+        reply_markup = self.api.edit_message.call_args[1].get('reply_markup', {})
+        keyboard_text = json.dumps(reply_markup)
+        self.assertIn('Server 1', keyboard_text)
+
+
+def _callback_update(chat_id, from_id, data_str, username=None):
+    from_user = {'id': from_id}
+    if username:
+        from_user['username'] = username
     return {
         'callback_query': {
             'id': f'cb-{from_id}',
-            'from': {'id': from_id},
+            'from': from_user,
             'message': {'chat': {'id': chat_id}, 'message_id': 42},
             'data': data_str,
         }

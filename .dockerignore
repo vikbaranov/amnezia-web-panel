@@ -1,0 +1,43 @@
+# Git
+.git
+.worktrees
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+env/
+.venv/
+
+# PyInstaller / build artifacts
+build/
+dist/
+*.spec
+
+# Tests & docs
+tests
+docs
+
+# Local user data (secrets, tokens, creds)
+data.json
+tunnels_state.json
+
+# Docker / compose files
+Dockerfile
+Dockerfile.warp
+docker-compose.yml
+docker-compose.warp.yml
+docker-entrypoint-warp.sh
+.dockerignore
+
+# CI
+.github
+
+# Misc
+README.md
+LICENSE
+Caddyfile
+Caddyfile.example
+.DS_Store

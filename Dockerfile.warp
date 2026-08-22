@@ -3,8 +3,16 @@
 # Optional image variant with Cloudflare WARP installed inside the container.
 # Use with:
 #   docker compose -f docker-compose.yml -f docker-compose.warp.yml up -d --build
+#
+# Runs as root because warp-svc requires NET_ADMIN / a TUN device.
 
-FROM python:3.14-slim-bookworm
+FROM python:3.11-slim-bookworm
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    DATA_FILE=/app/data/data.json \
+    TUNNEL_STATE_FILE=/app/data/tunnels_state.json
 
 WORKDIR /app
 
@@ -28,11 +36,15 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt requirements.txt
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m pip install --upgrade pip && \
+    python -m pip install -r requirements.txt
 
 COPY . .
 COPY docker-entrypoint-warp.sh /usr/local/bin/docker-entrypoint-warp.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint-warp.sh
+
+EXPOSE 5000
 
 ENTRYPOINT ["docker-entrypoint-warp.sh"]
 CMD ["python3", "app.py"]
