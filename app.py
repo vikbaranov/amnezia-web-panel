@@ -1936,7 +1936,7 @@ async def offline_page(request: Request):
 async def manifest():
     data = load_data()
     site_settings = data.get('settings', {}).get('appearance', {})
-    return build_webmanifest(site_settings)
+    return JSONResponse(build_webmanifest(site_settings), media_type="application/manifest+json")
 
 
 @app.get('/', response_class=HTMLResponse, tags=["System Templates"])
