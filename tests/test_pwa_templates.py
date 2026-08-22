@@ -22,6 +22,14 @@ class PwaTemplateRegistrationTest(unittest.TestCase):
         self.assertIn('.tunnel-actions', css)
         self.assertIn('#selfServiceControls', css)
 
+    def test_users_template_uses_card_specific_layout_classes(self):
+        html = pathlib.Path('templates/users.html').read_text(encoding='utf-8')
+
+        self.assertIn('user-card', html)
+        self.assertIn('user-card-info', html)
+        self.assertIn('user-card-body', html)
+        self.assertIn('user-card-actions', html)
+
     def test_templates_unregister_legacy_static_scope_worker(self):
         for template in ('templates/base.html', 'templates/login.html'):
             with self.subTest(template=template):

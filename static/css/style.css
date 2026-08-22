@@ -1215,6 +1215,44 @@ a:hover {
     max-width: 140px;
 }
 
+/* User cards are rendered in a grid, so they need a card layout rather than the generic row layout. */
+.user-card {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.user-card-info {
+    align-items: flex-start;
+}
+
+.user-card-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.user-card-name {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+}
+
+.user-card-name .badge {
+    margin-left: 0 !important;
+}
+
+.user-card-actions {
+    max-width: none !important;
+    justify-content: flex-start !important;
+    margin-left: calc(40px + var(--space-md));
+}
+
+.user-card .client-meta {
+    gap: var(--space-sm);
+    overflow-wrap: anywhere;
+}
+
 /* ===== Config Display ===== */
 .config-display {
     position: relative;
