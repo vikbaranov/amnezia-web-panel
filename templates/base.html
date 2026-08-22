@@ -67,6 +67,7 @@
                 </button>
                 <button class="theme-toggle" onclick="toggleTheme()" title="{{ _('toggle_theme') }}"
                     id="themeToggle">🌙</button>
+                <button class="theme-toggle install-button" id="installButton" style="display:none; margin-right: var(--space-sm);" title="{{ _('install_app') }}">📲</button>
                 <span class="nav-username">{{ current_user.username }}</span>
                 <span
                     class="badge badge-{{ 'success' if current_user.role == 'admin' else ('info' if current_user.role == 'support' else 'warn') }}"
@@ -84,6 +85,7 @@
                 </button>
                 <button class="theme-toggle" onclick="toggleTheme()" title="{{ _('toggle_theme') }}"
                     id="themeToggle">🌙</button>
+                <button class="theme-toggle install-button" id="installButton" style="display:none; margin-right: var(--space-sm);" title="{{ _('install_app') }}">📲</button>
             </div>
             {% endif %}
         </header>
@@ -275,6 +277,35 @@
             a.click();
             URL.revokeObjectURL(url);
         }
+    </script>
+
+    <script>
+        /* ===== PWA Install Prompt ===== */
+        (function () {
+            let deferredPrompt = null;
+            const installButton = document.getElementById('installButton');
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                if (installButton) installButton.style.display = '';
+            });
+
+            window.addEventListener('appinstalled', () => {
+                deferredPrompt = null;
+                if (installButton) installButton.style.display = 'none';
+            });
+
+            if (installButton) {
+                installButton.addEventListener('click', async () => {
+                    if (!deferredPrompt) return;
+                    deferredPrompt.prompt();
+                    await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    installButton.style.display = 'none';
+                });
+            }
+        })();
     </script>
 
     {% block scripts %}{% endblock %}
