@@ -92,6 +92,9 @@
     <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle"
         style="position:fixed; top:20px; {% if lang == 'fa' %}left:20px;{% else %}right:20px;{% endif %} z-index:10;"
         title="{{ _('toggle_theme') }}">🌙</button>
+    <button class="theme-toggle install-button" id="installButton"
+        style="position:fixed; top:20px; {% if lang == 'fa' %}left:110px;{% else %}right:110px;{% endif %} z-index:10; display:none;"
+        title="{{ _('install_app') }}">📲</button>
 
     <div class="login-wrapper">
         <div class="login-card">
@@ -292,6 +295,32 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+        }
+    </script>
+
+    <script>
+        let deferredPrompt = null;
+        const installButton = document.getElementById('installButton');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installButton) installButton.style.display = '';
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            if (installButton) installButton.style.display = 'none';
+        });
+
+        if (installButton) {
+            installButton.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installButton.style.display = 'none';
             });
         }
     </script>

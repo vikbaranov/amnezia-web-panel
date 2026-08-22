@@ -1938,6 +1938,9 @@ body,
         border-left: none;
         margin-left: auto;
         padding-left: 0;
+        padding-top: 0;
+        border-top: none;
+        justify-content: flex-end;
     }
 
     .nav-username,
