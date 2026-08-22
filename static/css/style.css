@@ -1924,15 +1924,54 @@ body,
     cursor: pointer;
 }
 
-/* Hide markup cached by earlier PWA builds. */
+/* ===== PWA Bottom Navigation (mobile) ===== */
 .bottom-nav {
-    display: none !important;
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: 4px 8px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(12px);
+}
+
+.bottom-nav-link {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 4px;
+    font-size: 0.62rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+}
+
+.bottom-nav-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.bottom-nav-link.active {
+    color: var(--accent-light);
+    background: rgba(139, 92, 246, 0.08);
 }
 
 @media (max-width: 768px) {
     .app-container {
         max-width: 100%;
         overflow-x: hidden;
+        padding-bottom: calc(90px + env(safe-area-inset-bottom));
+    }
+
+    .bottom-nav {
+        display: flex;
     }
 
     .app-header {

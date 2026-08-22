@@ -3,16 +3,26 @@ import unittest
 
 
 class PwaTemplateRegistrationTest(unittest.TestCase):
-    def test_base_template_does_not_render_bottom_nav(self):
+    def test_base_template_renders_bottom_nav(self):
         html = pathlib.Path('templates/base.html').read_text(encoding='utf-8')
 
-        self.assertNotIn('bottom-nav', html)
+        self.assertIn('class="bottom-nav"', html)
+        self.assertIn('bottom-nav-link', html)
+        self.assertIn('bottom-nav-icon', html)
 
-    def test_css_hides_legacy_bottom_nav_markup(self):
+    def test_css_styles_bottom_nav(self):
         css = pathlib.Path('static/css/style.css').read_text(encoding='utf-8')
 
-        self.assertIn('.bottom-nav', css)
-        self.assertIn('display: none !important', css)
+        start = css.index('.bottom-nav {')
+        end = css.index('}', start)
+        block = css[start:end]
+        self.assertIn('position: fixed', block)
+        self.assertIn('display: none;', block)
+        self.assertNotIn('!important', block)
+
+        mobile = css.index('@media (max-width: 768px)', css.index('.bottom-nav'))
+        self.assertIn('.bottom-nav', css[mobile:])
+        self.assertIn('display: flex', css[mobile:])
 
     def test_css_contains_mobile_overflow_guards(self):
         css = pathlib.Path('static/css/style.css').read_text(encoding='utf-8')
