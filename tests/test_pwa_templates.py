@@ -26,17 +26,23 @@ class PwaTemplateRegistrationTest(unittest.TestCase):
         html = pathlib.Path('templates/users.html').read_text(encoding='utf-8')
 
         self.assertIn('user-card', html)
-        self.assertIn('user-card-info', html)
+        self.assertIn('user-card-avatar', html)
         self.assertIn('user-card-body', html)
+        self.assertIn('user-card-header', html)
+        self.assertIn('user-card-meta', html)
         self.assertIn('user-card-actions', html)
 
-    def test_user_actions_are_inside_card_body(self):
+    def test_user_card_uses_explicit_avatar_body_actions_order(self):
         html = pathlib.Path('templates/users.html').read_text(encoding='utf-8')
-        body_start = html.index('<div class="user-card-body">')
+        card_start = html.index('<div class="client-item user-card"')
+        avatar = html.index('<div class="client-avatar user-card-avatar"', card_start)
+        body_start = html.index('<div class="user-card-body">', avatar)
         card_template_end = html.index('`).join', body_start)
-        body_fragment = html[body_start:card_template_end]
+        actions = html.index('<div class="client-actions user-card-actions"', body_start)
 
-        self.assertIn('<div class="client-actions user-card-actions"', body_fragment)
+        self.assertLess(avatar, body_start)
+        self.assertLess(body_start, actions)
+        self.assertLess(actions, card_template_end)
 
     def test_tunnel_buttons_wrap_text(self):
         css = pathlib.Path('static/css/style.css').read_text(encoding='utf-8')

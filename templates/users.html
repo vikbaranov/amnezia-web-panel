@@ -481,10 +481,9 @@
 
             grid.innerHTML = data.users.map(u => `
                 <div class="client-item user-card" id="user-${u.id}" style="${u.enabled ? '' : 'opacity:0.5;'}">
-                    <div class="client-info user-card-info">
-                        <div class="client-avatar">${u.username[0].toUpperCase()}</div>
-                        <div class="user-card-body">
-                            <div class="client-name user-card-name">
+                    <div class="client-avatar user-card-avatar">${u.username[0].toUpperCase()}</div>
+                    <div class="user-card-body">
+                            <div class="client-name user-card-header">
                                 ${u.username}
                                 <span class="badge badge-${u.role === 'admin' ? 'success' : (u.role === 'support' ? 'info' : 'warn')}" 
                                       style="font-size:0.65rem; margin-left: var(--space-xs);">
@@ -495,7 +494,7 @@
                                 </span>
                                 ${u.enabled ? '' : `<span class="badge badge-danger" style="font-size:0.65rem;">${_('disabled')}</span>`}
                             </div>
-                            <div class="client-meta">
+                            <div class="client-meta user-card-meta">
                                 <span style="cursor:pointer; color:var(--primary); text-decoration: underline;" onclick="viewUserConnections('${u.id}', '${u.username.replace(/'/g, "\\'")}')">🔗 ${u.connections_count} ${_('connections')}</span>
                                 ${u.created_at ? `<span>📅 ${u.created_at.substring(0, 10)}</span>` : ''}
                                 ${u.telegramId ? `<span>💬 ${u.telegramId}</span>` : ''}
@@ -559,7 +558,6 @@
                         ` : ''}
                         {% endif %}
                             </div>
-                        </div>
                     </div>
                 </div>
             `).join('');

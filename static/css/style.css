@@ -1217,15 +1217,11 @@ a:hover {
 
 /* User cards are rendered in a grid, so they need a card layout rather than the generic row layout. */
 .user-card {
-    align-items: stretch;
-    display: block;
-}
-
-.user-card-info {
     display: grid;
-    grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-columns: 56px minmax(0, 1fr);
     align-items: flex-start;
-    width: 100%;
+    justify-content: initial;
+    gap: var(--space-md);
 }
 
 .user-card-body {
@@ -1233,14 +1229,15 @@ a:hover {
     min-width: 0;
 }
 
-.user-card-name {
+.user-card-header {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: var(--space-xs);
+    margin-bottom: var(--space-xs);
 }
 
-.user-card-name .badge {
+.user-card-header .badge {
     margin-left: 0 !important;
 }
 
@@ -1248,6 +1245,12 @@ a:hover {
     max-width: none !important;
     justify-content: flex-start !important;
     margin: var(--space-md) 0 0;
+}
+
+.user-card-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1.15rem;
 }
 
 .user-card .client-meta {
