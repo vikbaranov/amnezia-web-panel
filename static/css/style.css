@@ -628,6 +628,19 @@ a:hover {
     letter-spacing: 0.05em;
 }
 
+/* Checkbox labels should not be uppercase and need proper spacing */
+label.form-label:has(input[type="checkbox"]) {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.85rem;
+    text-transform: capitalize;
+}
+
+.form-label input[type="checkbox"] {
+    margin-right: var(--space-sm);
+    vertical-align: middle;
+}
+
 .form-input,
 .form-select,
 .form-textarea {
@@ -2005,6 +2018,12 @@ body,
     .section-title {
         font-size: 1.35rem;
         gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+    }
+
+    label.form-label:has(input[type="checkbox"]) {
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     section > .flex.items-center.justify-between {
@@ -2015,6 +2034,14 @@ body,
     #usersGrid,
     .settings-grid {
         grid-template-columns: 1fr !important;
+    }
+
+    .settings-grid {
+        margin-top: var(--space-sm);
+    }
+
+    .settings-grid .card {
+        padding: var(--space-md);
     }
 
     #selfServiceControls {
