@@ -44,3 +44,6 @@ caddy-config/
 .worktrees/
 
 Caddyfile
+
+# Brainstorming / spec tooling
+.superpowers/
