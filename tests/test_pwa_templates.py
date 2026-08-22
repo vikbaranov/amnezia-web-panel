@@ -30,6 +30,21 @@ class PwaTemplateRegistrationTest(unittest.TestCase):
         self.assertIn('user-card-body', html)
         self.assertIn('user-card-actions', html)
 
+    def test_user_actions_are_inside_card_body(self):
+        html = pathlib.Path('templates/users.html').read_text(encoding='utf-8')
+        body_start = html.index('<div class="user-card-body">')
+        card_template_end = html.index('`).join', body_start)
+        body_fragment = html[body_start:card_template_end]
+
+        self.assertIn('<div class="client-actions user-card-actions"', body_fragment)
+
+    def test_tunnel_buttons_wrap_text(self):
+        css = pathlib.Path('static/css/style.css').read_text(encoding='utf-8')
+
+        self.assertIn('.tunnel-actions .btn', css)
+        self.assertIn('white-space: normal', css)
+        self.assertIn('width: 100%', css)
+
     def test_templates_unregister_legacy_static_scope_worker(self):
         for template in ('templates/base.html', 'templates/login.html'):
             with self.subTest(template=template):

@@ -1217,13 +1217,15 @@ a:hover {
 
 /* User cards are rendered in a grid, so they need a card layout rather than the generic row layout. */
 .user-card {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: var(--space-md);
+    align-items: stretch;
+    display: block;
 }
 
 .user-card-info {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
     align-items: flex-start;
+    width: 100%;
 }
 
 .user-card-body {
@@ -1245,12 +1247,21 @@ a:hover {
 .user-card-actions {
     max-width: none !important;
     justify-content: flex-start !important;
-    margin-left: calc(40px + var(--space-md));
+    margin: var(--space-md) 0 0;
 }
 
 .user-card .client-meta {
     gap: var(--space-sm);
     overflow-wrap: anywhere;
+}
+
+.tunnel-actions .btn {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+    text-align: center;
 }
 
 /* ===== Config Display ===== */

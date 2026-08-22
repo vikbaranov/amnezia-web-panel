@@ -536,9 +536,7 @@
                     return '';
                 })()}
                              ${u.traffic_reset_strategy !== 'never' ? `<div class="client-meta" style="font-size: 0.7rem; opacity: 0.6;">🔄 ${_('traffic_reset_strategy_label')}: ${_('traffic_reset_' + u.traffic_reset_strategy)}</div>` : ''}
-                        </div>
-                    </div>
-                    <div class="client-actions user-card-actions" style="flex-wrap: wrap; justify-content: flex-end; max-width: 140px;">
+                            <div class="client-actions user-card-actions" style="flex-wrap: wrap; justify-content: flex-start; max-width: none;">
                         {% if current_user.role == 'admin' %}
                         <button class="btn btn-secondary btn-sm btn-icon" 
                                 onclick="openAddConnectionForUser('${u.id}', '${u.username}')" 
@@ -560,6 +558,8 @@
                             <button class="btn btn-danger btn-sm btn-icon" onclick="deleteUser('${u.id}')" title="${_('delete')}">🗑</button>
                         ` : ''}
                         {% endif %}
+                            </div>
+                        </div>
                     </div>
                 </div>
             `).join('');
