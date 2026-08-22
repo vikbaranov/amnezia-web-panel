@@ -93,6 +93,30 @@
         <main>
             {% block content %}{% endblock %}
         </main>
+        {% if current_user %}
+        <nav class="bottom-nav" id="bottomNav">
+            {% if current_user.role in ['admin', 'support'] %}
+            <a href="/" class="bottom-nav-link">
+                <span class="bottom-nav-icon">🖥️</span>
+                <span>{{ _('nav_servers') }}</span>
+            </a>
+            <a href="/users" class="bottom-nav-link">
+                <span class="bottom-nav-icon">👥</span>
+                <span>{{ _('nav_users') }}</span>
+            </a>
+            {% endif %}
+            {% if current_user.role == 'admin' %}
+            <a href="/settings" class="bottom-nav-link">
+                <span class="bottom-nav-icon">⚙️</span>
+                <span>{{ _('nav_settings') }}</span>
+            </a>
+            {% endif %}
+            <a href="/my" class="bottom-nav-link">
+                <span class="bottom-nav-icon">🔌</span>
+                <span>{{ _('nav_connections') }}</span>
+            </a>
+        </nav>
+        {% endif %}
     </div>
 
     <!-- ===== Language Modal ===== -->
@@ -161,7 +185,7 @@
         /* ===== Active Nav Link ===== */
         (function () {
             const path = window.location.pathname;
-            document.querySelectorAll('.nav-link').forEach(link => {
+            document.querySelectorAll('.nav-link, .bottom-nav-link').forEach(link => {
                 const href = link.getAttribute('href');
                 if (href === '/' && path === '/') link.classList.add('active');
                 else if (href !== '/' && path.startsWith(href)) link.classList.add('active');
