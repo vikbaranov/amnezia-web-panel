@@ -43,6 +43,7 @@ from managers.xray_manager import XrayManager
 from managers.wireguard_manager import WireGuardManager
 from managers.backup_manager import BackupManager
 import telegram_bot as tg_bot
+from pwa import build_webmanifest
 from connection_service import (
     ConnectionService,
     DEFAULT_SELF_SERVICE_SETTINGS,
@@ -1924,6 +1925,18 @@ async def set_lang(lang: str, request: Request):
 async def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url='/login', status_code=302)
+
+
+@app.get('/offline', response_class=HTMLResponse, tags=["System Templates"])
+async def offline_page(request: Request):
+    return tpl(request, 'offline.html')
+
+
+@app.get('/manifest.webmanifest', tags=["System Templates"])
+async def manifest():
+    data = load_data()
+    site_settings = data.get('settings', {}).get('appearance', {})
+    return build_webmanifest(site_settings)
 
 
 @app.get('/', response_class=HTMLResponse, tags=["System Templates"])

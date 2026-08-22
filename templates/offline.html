@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" {% if lang=='fa' %}dir="rtl" {% endif %}>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site_settings.title or 'Amnezia Panel' }} — {{ _('offline_title') }}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script>!function () { var t = localStorage.getItem('theme') || 'dark'; document.documentElement.setAttribute('data-theme', t) }()</script>
+    <style>
+        .offline-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-lg);
+            background: var(--bg-primary);
+            text-align: center;
+        }
+        .offline-card { max-width: 360px; width: 100%; }
+        .offline-icon { font-size: 3rem; margin-bottom: var(--space-md); }
+        .offline-card h1 { font-size: 1.3rem; margin-bottom: var(--space-sm); color: var(--text-primary); }
+        .offline-card p { color: var(--text-secondary); margin-bottom: var(--space-lg); }
+    </style>
+</head>
+
+<body>
+    <div class="offline-wrapper">
+        <div class="offline-card">
+            <div class="offline-icon">📡</div>
+            <h1>{{ _('offline_title') }}</h1>
+            <p>{{ _('offline_message') }}</p>
+            <button class="btn btn-primary" onclick="location.reload()">{{ _('refresh') }}</button>
+        </div>
+    </div>
+</body>
+
+</html>
