@@ -8,6 +8,20 @@ class PwaTemplateRegistrationTest(unittest.TestCase):
 
         self.assertNotIn('bottom-nav', html)
 
+    def test_css_hides_legacy_bottom_nav_markup(self):
+        css = pathlib.Path('static/css/style.css').read_text(encoding='utf-8')
+
+        self.assertIn('.bottom-nav', css)
+        self.assertIn('display: none !important', css)
+
+    def test_css_contains_mobile_overflow_guards(self):
+        css = pathlib.Path('static/css/style.css').read_text(encoding='utf-8')
+
+        self.assertIn('#usersGrid', css)
+        self.assertIn('.settings-grid', css)
+        self.assertIn('.tunnel-actions', css)
+        self.assertIn('#selfServiceControls', css)
+
     def test_templates_unregister_legacy_static_scope_worker(self):
         for template in ('templates/base.html', 'templates/login.html'):
             with self.subTest(template=template):

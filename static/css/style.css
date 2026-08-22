@@ -1872,7 +1872,17 @@ body,
     cursor: pointer;
 }
 
+/* Hide markup cached by earlier PWA builds. */
+.bottom-nav {
+    display: none !important;
+}
+
 @media (max-width: 768px) {
+    .app-container {
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
     .app-header {
         flex-direction: row;
         align-items: center;
@@ -1899,5 +1909,58 @@ body,
     .nav-username,
     .nav-user .badge {
         display: none;
+    }
+
+    .section-title {
+        font-size: 1.35rem;
+        gap: var(--space-sm);
+    }
+
+    section > .flex.items-center.justify-between {
+        flex-wrap: wrap;
+        gap: var(--space-md);
+    }
+
+    #usersGrid,
+    .settings-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    #selfServiceControls {
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    #selfServiceControls .btn,
+    #selfServiceControls .badge {
+        max-width: 100%;
+    }
+
+    .client-item {
+        align-items: flex-start;
+        gap: var(--space-md);
+        padding: var(--space-md);
+    }
+
+    .client-info {
+        min-width: 0;
+    }
+
+    .client-actions {
+        max-width: none !important;
+        margin-left: 0;
+        justify-content: flex-start !important;
+    }
+
+    .tunnel-actions {
+        grid-template-columns: 1fr !important;
+    }
+
+    .tunnel-row code,
+    .vpn-link-box,
+    .config-text {
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 }

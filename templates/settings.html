@@ -8,7 +8,7 @@
     {{ _('settings_title') }}
 </div>
 
-<div class="grid"
+<div class="grid settings-grid"
     style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: var(--space-lg); align-items: start;">
     <!-- LEFT COLUMN -->
     <div style="display: flex; flex-direction: column; gap: var(--space-lg);">
@@ -120,7 +120,7 @@
                         <span class="badge badge-secondary" id="cloudflareInstallBadge">{{ _('not_installed') }}</span>
                     </div>
                     <div id="cloudflarePublicUrls" class="form-hint" style="margin-bottom: var(--space-sm);">{{ _('tunnel_no_public_url') }}</div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-sm);">
+                    <div class="tunnel-actions" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-sm);">
                         <button type="button" class="btn btn-primary" id="cloudflareTunnelBtn" onclick="enableTunnel('cloudflare')">
                             <span id="cloudflareTunnelBtnText">{{ _('tunnel_install_enable') }}</span>
                             <div class="spinner hidden" id="cloudflareTunnelSpinner" style="width:14px; height:14px;"></div>
@@ -145,7 +145,7 @@
                         <input type="password" class="form-input" id="ngrokAuthtoken" placeholder="{{ _('ngrok_authtoken_placeholder') }}" autocomplete="off">
                     </div>
                     <div id="ngrokPublicUrls" class="form-hint" style="margin-bottom: var(--space-sm);">{{ _('tunnel_no_public_url') }}</div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-sm);">
+                    <div class="tunnel-actions" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-sm);">
                         <button type="button" class="btn btn-primary" id="ngrokTunnelBtn" onclick="enableTunnel('ngrok')">
                             <span id="ngrokTunnelBtnText">{{ _('tunnel_install_enable') }}</span>
                             <div class="spinner hidden" id="ngrokTunnelSpinner" style="width:14px; height:14px;"></div>
@@ -169,7 +169,7 @@
                     </div>
                     <div id="warpStatusText" class="form-hint" style="margin-bottom: var(--space-sm);">{{ _('warp_status_unknown') }}</div>
                     <div id="warpHintText" class="form-hint" style="margin-bottom: var(--space-sm);">{{ _('warp_hint') }}</div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
+                    <div class="tunnel-actions" style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
                         <button type="button" class="btn btn-primary" id="warpConnectBtn" onclick="connectWarp()">
                             <span id="warpConnectBtnText">{{ _('warp_connect') }}</span>
                             <div class="spinner hidden" id="warpConnectSpinner" style="width:14px; height:14px;"></div>
