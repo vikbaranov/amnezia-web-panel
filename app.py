@@ -1939,6 +1939,11 @@ async def manifest():
     return JSONResponse(build_webmanifest(site_settings), media_type="application/manifest+json")
 
 
+@app.get('/sw.js', tags=["System Templates"])
+async def sw_js():
+    return FileResponse(os.path.join(os.path.dirname(__file__), 'static', 'sw.js'), media_type="application/javascript")
+
+
 @app.get('/', response_class=HTMLResponse, tags=["System Templates"])
 async def index(request: Request):
     user = get_current_user(request)
