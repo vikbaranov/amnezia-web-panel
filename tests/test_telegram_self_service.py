@@ -66,6 +66,15 @@ class TestUserCreateCallback(unittest.IsolatedAsyncioTestCase):
         # Verify there are callback buttons (resolved refs)
         self.assertIn('callback_data', keyboard_text)
 
+    async def test_user_create_panel_uses_russian_when_telegram_language_is_ru(self):
+        msg = _callback_update(chat_id=111, from_id=111, data_str='user_create', language_code='ru')
+        await _dispatch_callback(self.api, msg, self.load_data)
+        text = self.api.edit_message.call_args[0][2]
+        self.assertIn('Создать подключение', text)
+        self.assertIn('Выберите сервер', text)
+        self.assertNotIn('Create connection', text)
+        self.assertNotIn('Choose a server', text)
+
     async def test_user_create_shows_no_servers_message_when_self_service_disabled(self):
         self.data['settings']['self_service']['enabled'] = False
         msg = _callback_update(chat_id=111, from_id=111, data_str='user_create')
@@ -104,6 +113,17 @@ class TestUserCreateServerCallback(unittest.IsolatedAsyncioTestCase):
         keyboard_text = json.dumps(reply_markup)
         self.assertIn('AmneziaWG', keyboard_text)
         self.assertIn('AmneziaWG 2.0', keyboard_text)
+
+    async def test_user_create_protocol_panel_uses_russian_when_telegram_language_is_ru(self):
+        ref_key = tg_bot._ref('user_create_protocol', {'sid': 0, 'proto': 'awg2'})
+        msg = _callback_update(chat_id=111, from_id=111, data_str=ref_key, language_code='ru')
+        await _dispatch_callback(self.api, msg, self.load_data)
+        text = self.api.edit_message.call_args[0][2]
+        self.assertIn('Создать подключение', text)
+        self.assertIn('Протокол', text)
+        self.assertIn('Отправьте имя устройства', text)
+        self.assertNotIn('Create connection', text)
+        self.assertNotIn('Send the device name', text)
 
 
 class TestUserCreateCancel(unittest.IsolatedAsyncioTestCase):
@@ -274,6 +294,32 @@ class TestUserDeleteConnection(unittest.IsolatedAsyncioTestCase):
         self.assertIn('delete', text.lower())
         self.mock_service.delete_user_connection.assert_not_called()
 
+    async def test_user_delete_confirmation_uses_russian_when_telegram_language_is_ru(self):
+        ref_key = tg_bot._ref('user_delete', {'conn_id': 'conn-1', 'name': 'MyPhone'})
+        msg = _callback_update(chat_id=111, from_id=111, data_str=ref_key, language_code='ru')
+        await _dispatch_callback_with_service(self.api, msg, self.load_data, self.mock_service)
+        text = self.api.edit_message.call_args[0][2]
+        self.assertIn('Удалить подключение', text)
+        self.assertIn('Это действие нельзя отменить', text)
+        self.assertNotIn('Delete connection', text)
+        self.assertNotIn('This cannot be undone', text)
+
+    async def test_user_delete_success_uses_russian_when_telegram_language_is_ru(self):
+        async def delete_connection(user_id, conn_id, source):
+            self.data['user_connections'] = [c for c in self.data['user_connections'] if c['id'] != conn_id]
+            return {'status': 'success'}
+
+        self.data['user_connections'] = [self.data['user_connections'][0]]
+        self.mock_service.delete_user_connection = AsyncMock(side_effect=delete_connection)
+        ref_key = tg_bot._ref('user_delete_confirm', {'conn_id': 'conn-1'})
+        msg = _callback_update(chat_id=111, from_id=111, data_str=ref_key, language_code='ru')
+        await _dispatch_callback_with_service(self.api, msg, self.load_data, self.mock_service)
+        text = self.api.edit_message.call_args[0][2]
+        self.assertIn('Подключение удалено', text)
+        self.assertIn('У вас нет подключений', text)
+        self.assertNotIn('Connection deleted', text)
+        self.assertNotIn('You have no connections', text)
+
     async def test_user_delete_confirm_calls_service(self):
         ref_key = tg_bot._ref('user_delete_confirm', {'conn_id': 'conn-1'})
         msg = _callback_update(chat_id=111, from_id=111, data_str=ref_key)
@@ -342,10 +388,53 @@ class TestDispatchResolvesUsername(unittest.IsolatedAsyncioTestCase):
         self.assertIn('Server 1', keyboard_text)
 
 
-def _callback_update(chat_id, from_id, data_str, username=None):
+class TestTelegramLocalization(unittest.IsolatedAsyncioTestCase):
+    """Test Telegram language_code based localization."""
+
+    def setUp(self):
+        tg_bot._callback_refs.clear()
+        tg_bot._pending_inputs.clear()
+        self.data = base_data()
+        self.load_data = lambda: self.data
+        self.api = AsyncMock()
+        self.api.send_message = AsyncMock()
+
+    async def test_start_uses_russian_when_telegram_language_is_ru(self):
+        msg = _text_message(chat_id=999, from_id=999, text='/start', language_code='ru')
+        await _dispatch_message(self.api, msg, self.load_data)
+        text = self.api.send_message.call_args[0][1]
+        self.assertIn('Ваш аккаунт Telegram не привязан', text)
+        self.assertIn('Ваш Telegram ID', text)
+
+    async def test_user_connection_buttons_use_russian_when_telegram_language_is_ru(self):
+        msg = _text_message(chat_id=111, from_id=111, text='/start', language_code='ru')
+        await _dispatch_message(self.api, msg, self.load_data)
+        reply_markup = self.api.send_message.call_args[1].get('reply_markup', {})
+        keyboard_text = json.dumps(reply_markup, ensure_ascii=False)
+        self.assertIn('Создать подключение', keyboard_text)
+        self.assertIn('Обновить список', keyboard_text)
+        self.assertNotIn('Create connection', keyboard_text)
+        self.assertNotIn('Refresh list', keyboard_text)
+
+    async def test_admin_menu_buttons_use_russian_when_telegram_language_is_ru(self):
+        msg = _text_message(chat_id=222, from_id=222, text='/start', language_code='ru')
+        await _dispatch_message(self.api, msg, self.load_data)
+        reply_markup = self.api.send_message.call_args[1].get('reply_markup', {})
+        keyboard_text = json.dumps(reply_markup, ensure_ascii=False)
+        self.assertIn('Серверы', keyboard_text)
+        self.assertIn('Пользователи', keyboard_text)
+        self.assertIn('Мои подключения', keyboard_text)
+        self.assertIn('Как добавить сервер', keyboard_text)
+        self.assertNotIn('Servers', keyboard_text)
+        self.assertNotIn('Users', keyboard_text)
+
+
+def _callback_update(chat_id, from_id, data_str, username=None, language_code=None):
     from_user = {'id': from_id}
     if username:
         from_user['username'] = username
+    if language_code:
+        from_user['language_code'] = language_code
     return {
         'callback_query': {
             'id': f'cb-{from_id}',
@@ -356,11 +445,14 @@ def _callback_update(chat_id, from_id, data_str, username=None):
     }
 
 
-def _text_message(chat_id, from_id, text):
+def _text_message(chat_id, from_id, text, language_code=None):
+    from_user = {'id': from_id, 'first_name': 'Test'}
+    if language_code:
+        from_user['language_code'] = language_code
     return {
         'message': {
             'chat': {'id': chat_id},
-            'from': {'id': from_id, 'first_name': 'Test'},
+            'from': from_user,
             'text': text,
         }
     }
@@ -374,6 +466,11 @@ async def _dispatch_callback(api, update, load_data):
 async def _dispatch_callback_with_service(api, update, load_data, service):
     generate_vpn_link_fn = lambda c: f'vpn://{c}'
     await tg_bot._dispatch(api, update, load_data, generate_vpn_link_fn, None, self_service_svc=service)
+
+
+async def _dispatch_message(api, update, load_data):
+    generate_vpn_link_fn = lambda c: f'vpn://{c}'
+    await tg_bot._dispatch(api, update, load_data, generate_vpn_link_fn, None)
 
 
 if __name__ == '__main__':

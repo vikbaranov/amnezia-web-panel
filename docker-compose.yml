@@ -1,6 +1,6 @@
 services:
   amnezia-web-panel:
-    image: vikbaranov/amnezia-web-panel:develop
+    image: vikbaranov/amnezia-web-panel:1.1.0
     container_name: amnezia_panel
     volumes:
       - ./data:/app/data
