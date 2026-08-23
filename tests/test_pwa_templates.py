@@ -71,6 +71,12 @@ class PwaTemplateRegistrationTest(unittest.TestCase):
                 self.assertIn("registration.unregister()", html)
                 self.assertIn("navigator.serviceWorker.register('/sw.js')", html)
 
+    def test_server_template_does_not_show_aivpn_banner_above_connections(self):
+        html = pathlib.Path('templates/server.html').read_text(encoding='utf-8')
+
+        self.assertNotIn('<span class="promo-lock-badge">🔒 Coming soon</span>', html)
+        self.assertNotIn('AI-driven protocol selection that picks the right tunnel for the moment.', html)
+
 
 if __name__ == '__main__':
     unittest.main()

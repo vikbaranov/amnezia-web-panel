@@ -2,10 +2,27 @@
 
 A modern, high-performance web interface for managing **AmneziaWG**, **Classic WireGuard**, **Xray (XTLS-Reality)**, **Telemt (Telegram MTProxy)**, **Cloudflare WARP**, **AmneziaDNS**, **AdGuard Home**, **SOCKS5**, and **NGINX + Let's Encrypt** services on remote Ubuntu servers — from a single dashboard. Designed to provide a premium user experience with robust administrative capabilities.
 
-> ### 🔑 The Key Difference of this fork
-> 1. Unlike origianl [repository](https://github.com/PRVTPRO/Amnezia-Web-Panel) this fork ships with **built-in self-service**: once an admin enables it, regular users can create, delete, and download their own VPN connections — from the **`/my` web portal** or the **Telegram bot** — without ever contacting an administrator. Admins stay in control through per-server and per-protocol opt-in, per-user connection limits, and rate limiting.
-> 2. Also, this fork provides a Caddy reverse proxy in case if you have a DNS record that Caddy automatically issues Let's Encrypt certificate
-> 3. Responsbile and adaptive PWA version
+### 🔑 The Key Difference of this fork
+1. Unlike original [repository](https://github.com/PRVTPRO/Amnezia-Web-Panel) this fork ships with **built-in self-service**: once an admin enables it, regular users can create, delete, and download their own VPN connections — from the **`/my` web portal** or the **Telegram bot** — without ever contacting an administrator. Admins stay in control through per-server and per-protocol opt-in, per-user connection limits, and rate limiting.
+2. Also, this fork provides a Caddy reverse proxy in case if you have a DNS record that Caddy automatically issues Let's Encrypt certificate.
+3. Responsbile and adaptive PWA version.
+
+### Docker installation
+1. Create Caddyfile and add your own domain. 
+```bash
+portal.example.com {
+	reverse_proxy amnezia_panel:5000
+}
+```
+2. Prepare data directory.
+```
+mkdir -p /opt/amnezia-web-panel/data
+chown -R 1000:1000 /opt/amnezia-web-panel/data
+```
+3. Run docker compose.
+```
+docker compose up -d
+```
 
 > ### 🔄 Compatibility with Official Amnezia Client
 > 
