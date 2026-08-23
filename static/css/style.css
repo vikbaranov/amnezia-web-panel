@@ -1290,6 +1290,54 @@ label.form-label:has(input[type="checkbox"]) {
     overflow-wrap: anywhere;
 }
 
+.my-connection-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-md);
+}
+
+.my-connection-info {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    align-items: flex-start;
+    gap: var(--space-md);
+    width: 100%;
+}
+
+.my-connection-main {
+    min-width: 0;
+}
+
+.my-connection-server {
+    margin-top: 2px;
+}
+
+.my-connection-badges {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+}
+
+.my-connection-date {
+    margin-top: 0;
+}
+
+.my-connection-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    max-width: none;
+    width: 100%;
+    margin-top: var(--space-md);
+}
+
+.my-connection-actions .btn {
+    width: 100%;
+    justify-content: center;
+}
+
 .tunnel-actions .btn {
     width: 100%;
     min-width: 0;
@@ -2092,6 +2140,45 @@ body,
         max-width: none !important;
         margin-left: 0;
         justify-content: flex-start !important;
+    }
+
+    .my-connection-card {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .my-connection-info {
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr);
+        gap: var(--space-md);
+        width: 100%;
+    }
+
+    .my-connection-avatar {
+        grid-row: 1 / span 2;
+    }
+
+    .my-connection-name {
+        overflow-wrap: anywhere;
+    }
+
+    .my-connection-badges {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .my-connection-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+        margin-top: var(--space-md);
+    }
+
+    .my-connection-actions .btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .tunnel-actions {

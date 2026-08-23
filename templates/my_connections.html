@@ -26,19 +26,19 @@
     {% if connections %}
     <div class="clients-list" id="myConnectionsList">
         {% for c in connections %}
-        <div class="client-item" data-connection-id="{{ c.id }}" data-created-by="{{ c.get('created_by', '') }}">
-            <div class="client-info">
-                <div class="client-avatar">🔗</div>
-                <div>
-                    <div class="client-name">{{ c.name | default('VPN Connection') | e }}</div>
-                    <div class="client-meta">
-                        <span>🖥 {{ c.server_name }}</span>
+        <div class="client-item my-connection-card" data-connection-id="{{ c.id }}" data-created-by="{{ c.get('created_by', '') }}">
+            <div class="client-info my-connection-info">
+                <div class="client-avatar my-connection-avatar">🔗</div>
+                <div class="my-connection-main">
+                    <div class="client-name my-connection-name">{{ c.name | default('VPN Connection') | e }}</div>
+                    <div class="client-meta my-connection-server">🖥 {{ c.server_name }}</div>
+                    <div class="my-connection-badges">
                         <span class="badge badge-info" style="font-size:0.65rem;">
                             {{ 'AmneziaWG' if c.protocol == 'awg' else ('AmneziaWG 2.0' if c.protocol == 'awg2' else ('AWG Legacy' if c.protocol == 'awg_legacy' else
                             ('Xray' if c.protocol == 'xray' else c.protocol | upper))) }}
                         </span>
                         {% if c.created_at %}
-                        <span>📅 {{ c.created_at[:10] }}</span>
+                        <span class="client-meta my-connection-date">📅 {{ c.created_at[:10] }}</span>
                         {% endif %}
                         {% if c.get('created_by') == 'self_service' %}
                         <span class="badge badge-success" style="font-size:0.65rem;">{{ _('self_service_title') }}</span>
@@ -46,7 +46,7 @@
                     </div>
                 </div>
             </div>
-            <div class="client-actions">
+            <div class="client-actions my-connection-actions">
                 <button class="btn btn-primary btn-sm"
                     onclick="showMyConfig('{{ c.id }}', '{{ (c.name or 'Connection') | e }}', '{{ c.protocol }}')">
                     {{ _('show_config') }}
