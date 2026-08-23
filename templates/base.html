@@ -7,6 +7,13 @@
     <meta name="description" content="{{ _('site_description') }}">
     <title>{{ site_settings.title or 'Amnezia Panel' }} {% block title_extra %}{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ site_settings.title or 'Amnezia Panel' }}">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
     <link rel="stylesheet" href="/static/css/style.css">
     <script>!function () { var t = localStorage.getItem('theme') || 'dark'; document.documentElement.setAttribute('data-theme', t) }()</script>
     <script src="/static/js/qrcode.min.js"></script>
@@ -60,6 +67,7 @@
                 </button>
                 <button class="theme-toggle" onclick="toggleTheme()" title="{{ _('toggle_theme') }}"
                     id="themeToggle">🌙</button>
+                <button class="theme-toggle install-button" id="installButton" style="display:none; margin-right: var(--space-sm);" title="{{ _('install_app') }}">📲</button>
                 <span class="nav-username">{{ current_user.username }}</span>
                 <span
                     class="badge badge-{{ 'success' if current_user.role == 'admin' else ('info' if current_user.role == 'support' else 'warn') }}"
@@ -77,6 +85,7 @@
                 </button>
                 <button class="theme-toggle" onclick="toggleTheme()" title="{{ _('toggle_theme') }}"
                     id="themeToggle">🌙</button>
+                <button class="theme-toggle install-button" id="installButton" style="display:none; margin-right: var(--space-sm);" title="{{ _('install_app') }}">📲</button>
             </div>
             {% endif %}
         </header>
@@ -84,6 +93,30 @@
         <main>
             {% block content %}{% endblock %}
         </main>
+        {% if current_user %}
+        <nav class="bottom-nav" id="bottomNav">
+            {% if current_user.role in ['admin', 'support'] %}
+            <a href="/" class="bottom-nav-link">
+                <span class="bottom-nav-icon">🖥️</span>
+                <span>{{ _('nav_servers') }}</span>
+            </a>
+            <a href="/users" class="bottom-nav-link">
+                <span class="bottom-nav-icon">👥</span>
+                <span>{{ _('nav_users') }}</span>
+            </a>
+            {% endif %}
+            {% if current_user.role == 'admin' %}
+            <a href="/settings" class="bottom-nav-link">
+                <span class="bottom-nav-icon">⚙️</span>
+                <span>{{ _('nav_settings') }}</span>
+            </a>
+            {% endif %}
+            <a href="/my" class="bottom-nav-link">
+                <span class="bottom-nav-icon">🔌</span>
+                <span>{{ _('nav_connections') }}</span>
+            </a>
+        </nav>
+        {% endif %}
     </div>
 
     <!-- ===== Language Modal ===== -->
@@ -152,7 +185,7 @@
         /* ===== Active Nav Link ===== */
         (function () {
             const path = window.location.pathname;
-            document.querySelectorAll('.nav-link').forEach(link => {
+            document.querySelectorAll('.nav-link, .bottom-nav-link').forEach(link => {
                 const href = link.getAttribute('href');
                 if (href === '/' && path === '/') link.classList.add('active');
                 else if (href !== '/' && path.startsWith(href)) link.classList.add('active');
@@ -270,7 +303,50 @@
         }
     </script>
 
+    <script>
+        /* ===== PWA Install Prompt ===== */
+        (function () {
+            let deferredPrompt = null;
+            const installButton = document.getElementById('installButton');
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                if (installButton) installButton.style.display = '';
+            });
+
+            window.addEventListener('appinstalled', () => {
+                deferredPrompt = null;
+                if (installButton) installButton.style.display = 'none';
+            });
+
+            if (installButton) {
+                installButton.addEventListener('click', async () => {
+                    if (!deferredPrompt) return;
+                    deferredPrompt.prompt();
+                    await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    installButton.style.display = 'none';
+                });
+            }
+        })();
+    </script>
+
     {% block scripts %}{% endblock %}
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations
+                        .filter((registration) => registration.scope.endsWith('/static/'))
+                        .map((registration) => registration.unregister()));
+                    await navigator.serviceWorker.register('/sw.js');
+                } catch { }
+            });
+        }
+    </script>
 </body>
 
 </html>

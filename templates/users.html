@@ -26,7 +26,7 @@
 
     <div id="usersContainer" class="hidden">
         <div class="clients-list" id="usersGrid"
-            style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--space-md);">
             <!-- Users will be loaded here via JS -->
         </div>
 
@@ -480,11 +480,10 @@
             }
 
             grid.innerHTML = data.users.map(u => `
-                <div class="client-item" id="user-${u.id}" style="${u.enabled ? '' : 'opacity:0.5;'}">
-                    <div class="client-info">
-                        <div class="client-avatar">${u.username[0].toUpperCase()}</div>
-                        <div>
-                            <div class="client-name">
+                <div class="client-item user-card" id="user-${u.id}" style="${u.enabled ? '' : 'opacity:0.5;'}">
+                    <div class="client-avatar user-card-avatar">${u.username[0].toUpperCase()}</div>
+                    <div class="user-card-body">
+                            <div class="client-name user-card-header">
                                 ${u.username}
                                 <span class="badge badge-${u.role === 'admin' ? 'success' : (u.role === 'support' ? 'info' : 'warn')}" 
                                       style="font-size:0.65rem; margin-left: var(--space-xs);">
@@ -495,7 +494,7 @@
                                 </span>
                                 ${u.enabled ? '' : `<span class="badge badge-danger" style="font-size:0.65rem;">${_('disabled')}</span>`}
                             </div>
-                            <div class="client-meta">
+                            <div class="client-meta user-card-meta">
                                 <span style="cursor:pointer; color:var(--primary); text-decoration: underline;" onclick="viewUserConnections('${u.id}', '${u.username.replace(/'/g, "\\'")}')">🔗 ${u.connections_count} ${_('connections')}</span>
                                 ${u.created_at ? `<span>📅 ${u.created_at.substring(0, 10)}</span>` : ''}
                                 ${u.telegramId ? `<span>💬 ${u.telegramId}</span>` : ''}
@@ -536,9 +535,7 @@
                     return '';
                 })()}
                              ${u.traffic_reset_strategy !== 'never' ? `<div class="client-meta" style="font-size: 0.7rem; opacity: 0.6;">🔄 ${_('traffic_reset_strategy_label')}: ${_('traffic_reset_' + u.traffic_reset_strategy)}</div>` : ''}
-                        </div>
-                    </div>
-                    <div class="client-actions" style="flex-wrap: wrap; justify-content: flex-end; max-width: 140px;">
+                            <div class="client-actions user-card-actions">
                         {% if current_user.role == 'admin' %}
                         <button class="btn btn-secondary btn-sm btn-icon" 
                                 onclick="openAddConnectionForUser('${u.id}', '${u.username}')" 
@@ -560,6 +557,7 @@
                             <button class="btn btn-danger btn-sm btn-icon" onclick="deleteUser('${u.id}')" title="${_('delete')}">🗑</button>
                         ` : ''}
                         {% endif %}
+                            </div>
                     </div>
                 </div>
             `).join('');
@@ -1081,4 +1079,3 @@
 </script>
 
 {% endblock %}
-

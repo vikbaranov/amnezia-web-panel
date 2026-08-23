@@ -8,8 +8,8 @@
     {{ _('settings_title') }}
 </div>
 
-<div class="grid"
-    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: var(--space-lg); align-items: start;">
+<div class="grid settings-grid"
+    style="display: grid; gap: var(--space-lg); align-items: start;">
     <!-- LEFT COLUMN -->
     <div style="display: flex; flex-direction: column; gap: var(--space-lg);">
         <!-- BLOCK 1: Appearance -->
@@ -120,7 +120,7 @@
                         <span class="badge badge-secondary" id="cloudflareInstallBadge">{{ _('not_installed') }}</span>
                     </div>
                     <div id="cloudflarePublicUrls" class="form-hint" style="margin-bottom: var(--space-sm);">{{ _('tunnel_no_public_url') }}</div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-sm);">
+                    <div class="tunnel-actions" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-sm);">
                         <button type="button" class="btn btn-primary" id="cloudflareTunnelBtn" onclick="enableTunnel('cloudflare')">
                             <span id="cloudflareTunnelBtnText">{{ _('tunnel_install_enable') }}</span>
                             <div class="spinner hidden" id="cloudflareTunnelSpinner" style="width:14px; height:14px;"></div>
@@ -145,7 +145,7 @@
                         <input type="password" class="form-input" id="ngrokAuthtoken" placeholder="{{ _('ngrok_authtoken_placeholder') }}" autocomplete="off">
                     </div>
                     <div id="ngrokPublicUrls" class="form-hint" style="margin-bottom: var(--space-sm);">{{ _('tunnel_no_public_url') }}</div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-sm);">
+                    <div class="tunnel-actions" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-sm);">
                         <button type="button" class="btn btn-primary" id="ngrokTunnelBtn" onclick="enableTunnel('ngrok')">
                             <span id="ngrokTunnelBtnText">{{ _('tunnel_install_enable') }}</span>
                             <div class="spinner hidden" id="ngrokTunnelSpinner" style="width:14px; height:14px;"></div>
@@ -169,7 +169,7 @@
                     </div>
                     <div id="warpStatusText" class="form-hint" style="margin-bottom: var(--space-sm);">{{ _('warp_status_unknown') }}</div>
                     <div id="warpHintText" class="form-hint" style="margin-bottom: var(--space-sm);">{{ _('warp_hint') }}</div>
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
+                    <div class="tunnel-actions" style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--space-sm);">
                         <button type="button" class="btn btn-primary" id="warpConnectBtn" onclick="connectWarp()">
                             <span id="warpConnectBtnText">{{ _('warp_connect') }}</span>
                             <div class="spinner hidden" id="warpConnectSpinner" style="width:14px; height:14px;"></div>
@@ -231,63 +231,6 @@
             </form>
         </div>
 
-        <!-- BLOCK Self-Service -->
-        <div class="card">
-            <h3 class="card-title" style="margin-bottom: var(--space-lg);">🔓 {{ _('self_service_title') }}</h3>
-            <details>
-                <summary style="cursor:pointer; font-weight:600; margin-bottom: var(--space-md);">{{ _('self_service_title') }}</summary>
-                <form id="selfServiceForm" style="margin-top: var(--space-md);">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <input type="checkbox" id="ss_enabled" {% if settings.get('self_service', {}).get('enabled') %}checked{% endif %}>
-                            {{ _('self_service_enabled') }}
-                        </label>
-                        <div class="form-hint">{{ _('self_service_enabled_desc') }}</div>
-                    </div>
-                    <div id="selfServiceFields" style="{% if not settings.get('self_service', {}).get('enabled') %}display:none;{% endif %} margin-top: var(--space-md);">
-                        <div class="form-group">
-                            <label class="form-label">
-                                <input type="checkbox" id="ss_web_enabled" {% if settings.get('self_service', {}).get('web_enabled') %}checked{% endif %}>
-                                {{ _('self_service_web') }}
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">
-                                <input type="checkbox" id="ss_telegram_enabled" {% if settings.get('self_service', {}).get('telegram_enabled') %}checked{% endif %}>
-                                {{ _('self_service_telegram') }}
-                            </label>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-md); margin-top: var(--space-md);">
-                            <div class="form-group">
-                                <label class="form-label">{{ _('self_service_max_conns') }}</label>
-                                <input type="number" class="form-input" id="ss_max_connections" value="{{ settings.get('self_service', {}).get('max_connections_per_user', 5) }}" min="1" placeholder="5">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">{{ _('self_service_rate_limit') }}</label>
-                                <input type="number" class="form-input" id="ss_rate_limit" value="{{ settings.get('self_service', {}).get('rate_limit_count', 3) }}" min="1" placeholder="3">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">{{ _('self_service_rate_window') }}</label>
-                                <input type="number" class="form-input" id="ss_rate_window" value="{{ settings.get('self_service', {}).get('rate_limit_window_seconds', 60) }}" min="1" placeholder="60">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">{{ _('self_service_protocols') }}</label>
-                            <div style="display: flex; gap: var(--space-lg);">
-                                <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
-                                    <input type="checkbox" id="ss_proto_awg" {% if 'awg' in (settings.get('self_service', {}).get('allowed_protocols') or ['awg']) %}checked{% endif %}>
-                                    AmneziaWG
-                                </label>
-                                <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
-                                    <input type="checkbox" id="ss_proto_awg2" {% if 'awg2' in (settings.get('self_service', {}).get('allowed_protocols') or ['awg']) %}checked{% endif %}>
-                                    AmneziaWG 2.0
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </details>
-        </div>
     </div>
 
     <!-- RIGHT COLUMN -->
@@ -395,6 +338,64 @@
                     </div>
                 </div>
             </form>
+        </div>
+
+        <!-- BLOCK Self-Service -->
+        <div class="card">
+            <h3 class="card-title" style="margin-bottom: var(--space-lg);">🔓 {{ _('self_service_title') }}</h3>
+            <details>
+                <summary style="cursor:pointer; font-weight:600; margin-bottom: var(--space-md);">{{ _('self_service_title') }}</summary>
+                <form id="selfServiceForm" style="margin-top: var(--space-md);">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="ss_enabled" {% if settings.get('self_service', {}).get('enabled') %}checked{% endif %}>
+                            {{ _('self_service_enabled') }}
+                        </label>
+                        <div class="form-hint">{{ _('self_service_enabled_desc') }}</div>
+                    </div>
+                    <div id="selfServiceFields" style="{% if not settings.get('self_service', {}).get('enabled') %}display:none;{% endif %} margin-top: var(--space-md);">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" id="ss_web_enabled" {% if settings.get('self_service', {}).get('web_enabled') %}checked{% endif %}>
+                                {{ _('self_service_web') }}
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" id="ss_telegram_enabled" {% if settings.get('self_service', {}).get('telegram_enabled') %}checked{% endif %}>
+                                {{ _('self_service_telegram') }}
+                            </label>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-md); margin-top: var(--space-md);">
+                            <div class="form-group">
+                                <label class="form-label">{{ _('self_service_max_conns') }}</label>
+                                <input type="number" class="form-input" id="ss_max_connections" value="{{ settings.get('self_service', {}).get('max_connections_per_user', 5) }}" min="1" placeholder="5">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">{{ _('self_service_rate_limit') }}</label>
+                                <input type="number" class="form-input" id="ss_rate_limit" value="{{ settings.get('self_service', {}).get('rate_limit_count', 3) }}" min="1" placeholder="3">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">{{ _('self_service_rate_window') }}</label>
+                                <input type="number" class="form-input" id="ss_rate_window" value="{{ settings.get('self_service', {}).get('rate_limit_window_seconds', 60) }}" min="1" placeholder="60">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">{{ _('self_service_protocols') }}</label>
+                            <div style="display: flex; gap: var(--space-lg);">
+                                <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
+                                    <input type="checkbox" id="ss_proto_awg" {% if 'awg' in (settings.get('self_service', {}).get('allowed_protocols') or ['awg']) %}checked{% endif %}>
+                                    AmneziaWG
+                                </label>
+                                <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
+                                    <input type="checkbox" id="ss_proto_awg2" {% if 'awg2' in (settings.get('self_service', {}).get('allowed_protocols') or ['awg']) %}checked{% endif %}>
+                                    AmneziaWG 2.0
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </details>
         </div>
 
         <!-- BLOCK: Simple Backup -->

@@ -2,6 +2,10 @@
 
 A modern, high-performance web interface for managing **AmneziaWG**, **Classic WireGuard**, **Xray (XTLS-Reality)**, **Telemt (Telegram MTProxy)**, **Cloudflare WARP**, **AmneziaDNS**, **AdGuard Home**, **SOCKS5**, and **NGINX + Let's Encrypt** services on remote Ubuntu servers — from a single dashboard. Designed to provide a premium user experience with robust administrative capabilities.
 
+> ### 🔑 The Key Difference of this fork
+> Unlike origianl [repository](https://github.com/PRVTPRO/Amnezia-Web-Panel) this fork ships with **built-in self-service**: once an admin enables it, regular users can create, delete, and download their own VPN connections — from the **`/my` web portal** or the **Telegram bot** — without ever contacting an administrator. Admins stay in control through per-server and per-protocol opt-in, per-user connection limits, and rate limiting.
+> Also, this fork provides a Caddy reverse proxy in case if you have a DNS record that Caddy automatically issues Let's Encrypt certificate
+
 > ### 🔄 Compatibility with Official Amnezia Client
 > 
 > This panel is fully compatible with the official **Amnezia** applications!

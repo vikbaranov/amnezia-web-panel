@@ -440,6 +440,20 @@ a:hover {
     margin-top: var(--space-xs);
 }
 
+.settings-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
+    max-width: 100%;
+}
+
+.settings-grid > * {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.settings-grid .card {
+    max-width: 100%;
+}
+
 /* ===== Section ===== */
 .section-title {
     font-size: 1.5rem;
@@ -626,6 +640,19 @@ a:hover {
     margin-bottom: var(--space-xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+}
+
+/* Checkbox labels should not be uppercase and need proper spacing */
+label.form-label:has(input[type="checkbox"]) {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.85rem;
+    text-transform: capitalize;
+}
+
+.form-label input[type="checkbox"] {
+    margin-right: var(--space-sm);
+    vertical-align: middle;
 }
 
 .form-input,
@@ -1215,6 +1242,63 @@ a:hover {
     max-width: 140px;
 }
 
+/* User cards are rendered in a grid, so they need a card layout rather than the generic row layout. */
+.user-card {
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: flex-start;
+    justify-content: initial;
+    gap: var(--space-md);
+}
+
+.user-card-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+}
+
+.user-card-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-xs);
+}
+
+.user-card-header .badge {
+    margin-left: 0 !important;
+}
+
+.user-card-actions {
+    flex-wrap: wrap;
+    max-width: none !important;
+    justify-content: flex-start !important;
+    margin: auto 0 0;
+    padding-top: var(--space-md);
+}
+
+.user-card-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 1.15rem;
+}
+
+.user-card .client-meta {
+    gap: var(--space-sm);
+    overflow-wrap: anywhere;
+}
+
+.tunnel-actions .btn {
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+    text-align: center;
+}
+
 /* ===== Config Display ===== */
 .config-display {
     position: relative;
@@ -1524,7 +1608,11 @@ a:hover {
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
     .app-container {
-        padding: var(--space-md) var(--space-md);
+        padding: var(--space-md);
+    }
+
+    main {
+        padding: 0;
     }
 
     .server-grid {
@@ -1865,4 +1953,155 @@ body,
 
 .gap-md {
     gap: var(--space-md);
+}
+
+/* ===== Install button ===== */
+.install-button {
+    cursor: pointer;
+}
+
+/* ===== PWA Bottom Navigation (mobile) ===== */
+.bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    padding: 4px 8px;
+    padding-bottom: calc(4px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(12px);
+}
+
+.bottom-nav-link {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 4px;
+    font-size: 0.62rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+}
+
+.bottom-nav-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.bottom-nav-link.active {
+    color: var(--accent-light);
+    background: rgba(139, 92, 246, 0.08);
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        max-width: 100%;
+        overflow-x: hidden;
+        padding-bottom: calc(90px + env(safe-area-inset-bottom));
+    }
+
+    .bottom-nav {
+        display: flex;
+    }
+
+    .app-header {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-sm);
+    }
+
+    .logo-subtitle {
+        display: none;
+    }
+
+    .header-nav {
+        display: none;
+    }
+
+    .nav-user {
+        border-left: none;
+        margin-left: auto;
+        padding-left: 0;
+        padding-top: 0;
+        border-top: none;
+        justify-content: flex-end;
+    }
+
+    .nav-username,
+    .nav-user .badge {
+        display: none;
+    }
+
+    .section-title {
+        font-size: 1.35rem;
+        gap: var(--space-sm);
+        margin-bottom: var(--space-md);
+    }
+
+    label.form-label:has(input[type="checkbox"]) {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    section > .flex.items-center.justify-between {
+        flex-wrap: wrap;
+        gap: var(--space-md);
+    }
+
+    #usersGrid,
+    .settings-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .settings-grid {
+        margin-top: var(--space-sm);
+    }
+
+    .settings-grid .card {
+        padding: var(--space-md);
+    }
+
+    #selfServiceControls {
+        width: 100%;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    #selfServiceControls .btn,
+    #selfServiceControls .badge {
+        max-width: 100%;
+    }
+
+    .client-item {
+        align-items: flex-start;
+        gap: var(--space-md);
+        padding: var(--space-md);
+    }
+
+    .client-info {
+        min-width: 0;
+    }
+
+    .client-actions {
+        max-width: none !important;
+        margin-left: 0;
+        justify-content: flex-start !important;
+    }
+
+    .tunnel-actions {
+        grid-template-columns: 1fr !important;
+    }
+
+    .tunnel-row code,
+    .vpn-link-box,
+    .config-text {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
 }

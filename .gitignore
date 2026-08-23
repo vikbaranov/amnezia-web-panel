@@ -30,6 +30,10 @@ coverage.xml
 
 # User data
 data.json
+data/
+warp-data/
+caddy-data/
+caddy-config/
 .DS_Store
 
 # IDEs
@@ -38,3 +42,8 @@ data.json
 
 # Local git worktrees
 .worktrees/
+
+Caddyfile
+
+# Brainstorming / spec tooling
+.superpowers/

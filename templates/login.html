@@ -6,6 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ site_settings.title or 'Amnezia Panel' }} — {{ _('login') }}</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="{{ site_settings.title or 'Amnezia Panel' }}">
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
     <link rel="stylesheet" href="/static/css/style.css">
     <script>!function () { var t = localStorage.getItem('theme') || 'dark'; document.documentElement.setAttribute('data-theme', t) }()</script>
     <style>
@@ -85,6 +92,9 @@
     <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle"
         style="position:fixed; top:20px; {% if lang == 'fa' %}left:20px;{% else %}right:20px;{% endif %} z-index:10;"
         title="{{ _('toggle_theme') }}">🌙</button>
+    <button class="theme-toggle install-button" id="installButton"
+        style="position:fixed; top:20px; {% if lang == 'fa' %}left:110px;{% else %}right:110px;{% endif %} z-index:10; display:none;"
+        title="{{ _('install_app') }}">📲</button>
 
     <div class="login-wrapper">
         <div class="login-card">
@@ -278,6 +288,46 @@
                 text.textContent = _('login');
                 spinner.classList.add('hidden');
             }
+        }
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations
+                        .filter((registration) => registration.scope.endsWith('/static/'))
+                        .map((registration) => registration.unregister()));
+                    await navigator.serviceWorker.register('/sw.js');
+                } catch { }
+            });
+        }
+    </script>
+
+    <script>
+        let deferredPrompt = null;
+        const installButton = document.getElementById('installButton');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (installButton) installButton.style.display = '';
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            if (installButton) installButton.style.display = 'none';
+        });
+
+        if (installButton) {
+            installButton.addEventListener('click', async () => {
+                if (!deferredPrompt) return;
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installButton.style.display = 'none';
+            });
         }
     </script>
 </body>
