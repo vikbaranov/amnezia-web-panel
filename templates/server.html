@@ -172,15 +172,42 @@
 </div>
 
 <div class="protocol-cards" id="protocols-grid">
-    <!-- AWG2 Card (first - new version) -->
+    <!-- AWG3 Card (first - newest version).
+         Installed-protocol tiles are static cards toggled by
+         applyInstalledAppsVisibility(); a protocol without one is shown in the
+         marketplace but never gets a tile here. -->
+    <div class="card card-hover protocol-card protocol-awg" id="proto-awg3">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-sm);">
+            <div class="protocol-icon">🛡</div>
+            <div class="flex gap-sm" id="awg3-ctrl" style="display:none!important;"></div>
+        </div>
+        <div class="protocol-name">AmneziaWG 3.1 <span
+                style="font-size:0.65rem; background:var(--accent); color:#fff; padding:2px 6px; border-radius:8px; vertical-align:middle;">NEW</span>
+        </div>
+        <div class="protocol-desc">
+            {{ _('awg_desc') }}
+        </div>
+        <div class="protocol-status" id="awg3-status">
+            <span class="badge badge-warn"><span class="badge-dot"></span> {{ _('not_checked') }}</span>
+        </div>
+        <div id="awg3-info" class="hidden">
+            <div class="protocol-info" id="awg3-info-grid"></div>
+        </div>
+        <div class="flex gap-sm" id="awg3-actions">
+            <button class="btn btn-primary btn-sm" onclick="openInstallModal('awg3')" id="awg3-install-btn"
+                style="flex:1">
+                {{ _('install') }}
+            </button>
+        </div>
+    </div>
+
+    <!-- AWG2 Card -->
     <div class="card card-hover protocol-card protocol-awg" id="proto-awg2">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--space-sm);">
             <div class="protocol-icon">✨</div>
             <div class="flex gap-sm" id="awg2-ctrl" style="display:none!important;"></div>
         </div>
-        <div class="protocol-name">AmneziaWG 2.0 <span
-                style="font-size:0.65rem; background:var(--accent); color:#fff; padding:2px 6px; border-radius:8px; vertical-align:middle;">NEW</span>
-        </div>
+        <div class="protocol-name">AmneziaWG 2.0</div>
         <div class="protocol-desc">
             {{ _('awg_desc') }}
         </div>
