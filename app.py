@@ -866,8 +866,8 @@ async def wait_for_tunnel_url(provider: str, seconds: int = 20):
     return get_tunnel_status(provider)
 
 
-BASE_PROTOCOLS = ['awg', 'awg2', 'awg_legacy', 'xray', 'telemt', 'dns', 'wireguard', 'socks5', 'adguard', 'nginx']
-MULTI_INSTANCE_PROTOCOLS = {'awg', 'awg2', 'awg_legacy', 'xray', 'telemt', 'socks5'}
+BASE_PROTOCOLS = ['awg', 'awg2', 'awg3', 'awg_legacy', 'xray', 'telemt', 'dns', 'wireguard', 'socks5', 'adguard', 'nginx']
+MULTI_INSTANCE_PROTOCOLS = {'awg', 'awg2', 'awg3', 'awg_legacy', 'xray', 'telemt', 'socks5'}
 
 
 def protocol_base(protocol: str) -> str:
@@ -904,6 +904,7 @@ def protocol_display_name(protocol: str) -> str:
     names = {
         'awg': 'AmneziaWG',
         'awg2': 'AmneziaWG 2.0',
+        'awg3': 'AmneziaWG 3.1',
         'awg_legacy': 'AmneziaWG Legacy',
         'xray': 'Xray',
         'telemt': 'Telemt',
@@ -923,6 +924,7 @@ def protocol_container_name(protocol: str) -> Optional[str]:
     base_names = {
         'awg': 'amnezia-awg',
         'awg2': 'amnezia-awg2',
+        'awg3': 'amnezia-awg3',
         'awg_legacy': 'amnezia-awg-legacy',
         'xray': 'amnezia-xray',
         'telemt': 'telemt',
@@ -1786,7 +1788,7 @@ def _scrape_server_traffic(server, sid, my_conns):
     try:
         ssh = get_ssh(server)
         ssh.connect()
-        for proto in ['awg', 'awg2', 'awg_legacy', 'xray', 'telemt', 'wireguard']:
+        for proto in ['awg', 'awg2', 'awg3', 'awg_legacy', 'xray', 'telemt', 'wireguard']:
             if proto in server.get('protocols', {}):
                 manager = get_protocol_manager(ssh, proto)
                 clients = _manager_call(manager, 'get_clients', proto)
@@ -2717,6 +2719,7 @@ async def api_uninstall_protocol(request: Request, server_id: int, req: Protocol
 CONTAINER_NAMES = {
     'awg': 'amnezia-awg',
     'awg2': 'amnezia-awg2',
+    'awg3': 'amnezia-awg3',
     'awg_legacy': 'amnezia-awg-legacy',
     'xray': 'amnezia-xray',
     'telemt': 'telemt',

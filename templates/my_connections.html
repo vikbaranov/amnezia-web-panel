@@ -34,8 +34,8 @@
                     <div class="client-meta my-connection-server">🖥 {{ c.server_name }}</div>
                     <div class="my-connection-badges">
                         <span class="badge badge-info" style="font-size:0.65rem;">
-                            {{ 'AmneziaWG' if c.protocol == 'awg' else ('AmneziaWG 2.0' if c.protocol == 'awg2' else ('AWG Legacy' if c.protocol == 'awg_legacy' else
-                            ('Xray' if c.protocol == 'xray' else c.protocol | upper))) }}
+                            {{ 'AmneziaWG' if c.protocol == 'awg' else ('AmneziaWG 3.1' if c.protocol == 'awg3' else ('AmneziaWG 2.0' if c.protocol == 'awg2' else ('AWG Legacy' if c.protocol == 'awg_legacy' else
+                            ('Xray' if c.protocol == 'xray' else c.protocol | upper)))) }}
                         </span>
                         {% if c.created_at %}
                         <span class="client-meta my-connection-date">📅 {{ c.created_at[:10] }}</span>
