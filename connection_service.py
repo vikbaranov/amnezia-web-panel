@@ -98,7 +98,7 @@ class ConnectionService:
             async with self.data_lock:
                 data = self.load_data()
                 settings = self._settings(data)
-                user = self._validate_create_request(data, settings, user_id, server_id, protocol, clean_name, source)
+                self._validate_create_request(data, settings, user_id, server_id, protocol, clean_name, source)
                 self._check_rate_limit(user_id, source, settings)
                 server = data['servers'][server_id]
                 port = server.get('protocols', {}).get(protocol, {}).get('port', '55424')
