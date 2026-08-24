@@ -70,6 +70,7 @@
   "docker_ok": "Docker",
   "docker_not_installed": "Docker non installé",
   "awg_desc": "Version moderne basée sur awg-go. Obfuscation avancée (S3, S4).",
+  "awg3_desc": "Complète l'obfuscation 2.0 par la protection des en-têtes et le remplissage des données. Les délais de handshake et de renouvellement des clés sont aléatoires, sans signature temporelle fixe.",
   "awg_legacy_desc": "Version AWG originale. Compatible avec les anciens clients.",
   "xray_desc": "Masque le trafic en trafic web normal (XTLS-Reality). Résiste au DPI.",
   "not_checked": "Non vérifié",

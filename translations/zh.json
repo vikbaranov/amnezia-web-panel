@@ -70,6 +70,7 @@
   "docker_ok": "Docker 正常",
   "docker_not_installed": "Docker 未安装",
   "awg_desc": "基于 awg-go 的新版协议。支持 S3, S4 高级混淆。",
+  "awg3_desc": "在 2.0 混淆的基础上增加头部保护和内容填充。握手与密钥轮换的时间随机化，不留固定的时间特征。",
   "awg_legacy_desc": "原始 AWG 版本。兼容旧版客户端。",
   "xray_desc": "将流量伪装成普通网页流量 (XTLS-Reality)，抗封锁能力强。",
   "not_checked": "未检查",
