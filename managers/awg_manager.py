@@ -67,6 +67,12 @@ AWG3_PARAM_MAP = [
 # ships tools that reject them.
 AWG3_CONFIG_KEYS = tuple(config_key for _, config_key in AWG3_PARAM_MAP)
 
+# With HeaderProtectionKey set, the kernel module requires every junk size
+# S1-S4 to be at least HEADER_PROTECTION_NONCE_SIZE (12) — see the S1..S4
+# checks in netlink.c. Below that `awg setconf` fails with a bare
+# "Invalid argument": the explanation only goes to net_dbg_ratelimited.
+AWG3_MIN_JUNK_SIZE = 12
+
 
 def generate_wg_keypair():
     """Generate a WireGuard X25519 keypair (private, public) as base64 strings."""
@@ -103,10 +109,12 @@ def generate_awg_params(use_ranges=False, awg3=False):
     jc = random.randint(1, 10)
     jmin = random.randint(5, 20)
     jmax = random.randint(jmin + 10, jmin + 50)
-    s1 = random.randint(10, 50)
-    s2 = random.randint(10, 50)
-    s3 = random.randint(10, 50)
-    s4 = random.randint(10, 50)
+    # AWG 3.1 enables header protection, which puts a floor under the junk sizes.
+    s_min = AWG3_MIN_JUNK_SIZE if awg3 else 10
+    s1 = random.randint(s_min, 50)
+    s2 = random.randint(s_min, 50)
+    s3 = random.randint(s_min, 50)
+    s4 = random.randint(s_min, 50)
 
     if use_ranges:
         # AWG 2.0: H1-H4 as non-overlapping ranges (min-max)
