@@ -329,6 +329,8 @@
                                     AmneziaWG</option>
                                 <option value="awg2" {% if settings.sync.remnawave_protocol=='awg2' %}selected{% endif %}>
                                     AmneziaWG 2.0</option>
+                                <option value="awg3" {% if settings.sync.remnawave_protocol=='awg3' %}selected{% endif %}>
+                                    AmneziaWG 3.1</option>
                                 <option value="awg_legacy" {% if settings.sync.remnawave_protocol=='awg_legacy' %}selected{% endif %}>
                                     AWG Legacy</option>
                                 <option value="xray" {% if settings.sync.remnawave_protocol=='xray' %}selected{% endif %}>
@@ -382,7 +384,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">{{ _('self_service_protocols') }}</label>
-                            <div style="display: flex; gap: var(--space-lg);">
+                            <div style="display: flex; gap: var(--space-lg); flex-wrap: wrap;">
                                 <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
                                     <input type="checkbox" id="ss_proto_awg" {% if 'awg' in (settings.get('self_service', {}).get('allowed_protocols') or ['awg']) %}checked{% endif %}>
                                     AmneziaWG
@@ -390,6 +392,10 @@
                                 <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
                                     <input type="checkbox" id="ss_proto_awg2" {% if 'awg2' in (settings.get('self_service', {}).get('allowed_protocols') or ['awg']) %}checked{% endif %}>
                                     AmneziaWG 2.0
+                                </label>
+                                <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
+                                    <input type="checkbox" id="ss_proto_awg3" {% if 'awg3' in (settings.get('self_service', {}).get('allowed_protocols') or []) %}checked{% endif %}>
+                                    AmneziaWG 3.1
                                 </label>
                             </div>
                         </div>
@@ -546,7 +552,7 @@
             if (info.installed) {
                 const opt = document.createElement('option');
                 opt.value = key;
-                opt.textContent = key === 'awg' ? 'AmneziaWG' : (key === 'awg2' ? 'AmneziaWG 2.0' : (key === 'awg_legacy' ? 'AWG Legacy' : (key === 'xray' ? 'Xray' : key.toUpperCase())));
+                opt.textContent = key === 'awg' ? 'AmneziaWG' : (key === 'awg2' ? 'AmneziaWG 2.0' : (key === 'awg3' ? 'AmneziaWG 3.1' : (key === 'awg_legacy' ? 'AWG Legacy' : (key === 'xray' ? 'Xray' : key.toUpperCase()))));
                 if (key === "{{ settings.sync.remnawave_protocol }}") opt.selected = true;
                 protoSelect.appendChild(opt);
                 count++;
@@ -876,6 +882,7 @@
             allowed_protocols: [
                 ...(document.getElementById('ss_proto_awg').checked ? ['awg'] : []),
                 ...(document.getElementById('ss_proto_awg2').checked ? ['awg2'] : []),
+                ...(document.getElementById('ss_proto_awg3').checked ? ['awg3'] : []),
             ],
         };
 

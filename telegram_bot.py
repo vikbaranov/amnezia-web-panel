@@ -24,7 +24,7 @@ _bot_task: Optional[asyncio.Task] = None
 _callback_refs = {}
 _pending_inputs = {}
 
-CLIENT_PROTOCOLS = {"awg", "awg2", "awg_legacy", "xray", "telemt", "wireguard"}
+CLIENT_PROTOCOLS = {"awg", "awg2", "awg3", "awg_legacy", "xray", "telemt", "wireguard"}
 SERVICE_PROTOCOLS = {"dns", "adguard", "socks5", "nginx"}
 
 TG_TRANSLATIONS = {
@@ -271,6 +271,7 @@ def _protocol_display_name(protocol: str) -> str:
     names = {
         "awg": "AmneziaWG",
         "awg2": "AmneziaWG 2.0",
+        "awg3": "AmneziaWG 3.1",
         "awg_legacy": "AmneziaWG Legacy",
         "xray": "Xray",
         "telemt": "Telemt",
@@ -318,13 +319,13 @@ def _self_service_telegram_enabled(data: dict) -> bool:
 
 
 def _get_eligible_servers(data: dict) -> list:
-    allowed_protocols = set(data.get("settings", {}).get("self_service", {}).get("allowed_protocols", []) or []) & {"awg", "awg2"}
+    allowed_protocols = set(data.get("settings", {}).get("self_service", {}).get("allowed_protocols", []) or []) & {"awg", "awg2", "awg3"}
     result = []
     for sid, server in enumerate(data.get("servers", [])):
         if not server.get("self_service_enabled", False):
             continue
         protocols = []
-        for proto in ("awg", "awg2"):
+        for proto in ("awg", "awg2", "awg3"):
             if proto in allowed_protocols and proto in server.get("protocols", {}):
                 protocols.append(proto)
         if protocols:
@@ -1224,8 +1225,8 @@ async def _user_create_server(api: TelegramAPI, chat_id: int, message_id: int, c
         await api.edit_message(chat_id, message_id, _tt(lang, "server_not_self_service"))
         return
 
-    allowed_protocols = set(data.get("settings", {}).get("self_service", {}).get("allowed_protocols", []) or []) & {"awg", "awg2"}
-    available_protos = [p for p in ("awg", "awg2") if p in allowed_protocols and p in server.get("protocols", {})]
+    allowed_protocols = set(data.get("settings", {}).get("self_service", {}).get("allowed_protocols", []) or []) & {"awg", "awg2", "awg3"}
+    available_protos = [p for p in ("awg", "awg2", "awg3") if p in allowed_protocols and p in server.get("protocols", {})]
     if not available_protos:
         await api.edit_message(chat_id, message_id, _tt(lang, "no_protocols_available"))
         return

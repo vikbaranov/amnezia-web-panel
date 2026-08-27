@@ -114,6 +114,24 @@ class TestUserCreateServerCallback(unittest.IsolatedAsyncioTestCase):
         self.assertIn('AmneziaWG', keyboard_text)
         self.assertIn('AmneziaWG 2.0', keyboard_text)
 
+    async def test_user_create_server_shows_awg3_when_allowed_and_installed(self):
+        self.data['settings']['self_service']['allowed_protocols'] = ['awg', 'awg2', 'awg3']
+        self.data['servers'][0]['protocols']['awg3'] = {'port': '55426'}
+        ref_key = tg_bot._ref('user_create_server', {'sid': 0})
+        msg = _callback_update(chat_id=111, from_id=111, data_str=ref_key)
+        await _dispatch_callback(self.api, msg, self.load_data)
+        keyboard_text = json.dumps(self.api.edit_message.call_args[1].get('reply_markup', {}))
+        self.assertIn('AmneziaWG 3.1', keyboard_text)
+
+    async def test_user_create_server_hides_awg3_when_not_allowed(self):
+        self.data['settings']['self_service']['allowed_protocols'] = ['awg', 'awg2']
+        self.data['servers'][0]['protocols']['awg3'] = {'port': '55426'}
+        ref_key = tg_bot._ref('user_create_server', {'sid': 0})
+        msg = _callback_update(chat_id=111, from_id=111, data_str=ref_key)
+        await _dispatch_callback(self.api, msg, self.load_data)
+        keyboard_text = json.dumps(self.api.edit_message.call_args[1].get('reply_markup', {}))
+        self.assertNotIn('AmneziaWG 3.1', keyboard_text)
+
     async def test_user_create_protocol_panel_uses_russian_when_telegram_language_is_ru(self):
         ref_key = tg_bot._ref('user_create_protocol', {'sid': 0, 'proto': 'awg2'})
         msg = _callback_update(chat_id=111, from_id=111, data_str=ref_key, language_code='ru')

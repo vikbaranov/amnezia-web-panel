@@ -116,6 +116,57 @@ class ConnectionServiceTest(unittest.IsolatedAsyncioTestCase):
             [{'id': 0, 'name': 'Server 1', 'protocols': [{'protocol': 'awg', 'name': 'AWG'}]}],
         )
 
+    async def test_options_include_awg3_when_installed_and_allowed(self):
+        data = base_data()
+        data['settings']['self_service']['allowed_protocols'] = ['awg', 'awg2', 'awg3']
+        data['servers'][0]['protocols']['awg3'] = {'port': '55426'}
+        service, _, _ = self.make_service(data)
+
+        options = await service.get_self_service_options('user-1', 'web')
+
+        self.assertEqual(
+            options['servers'],
+            [{
+                'id': 0,
+                'name': 'Server 1',
+                'protocols': [
+                    {'protocol': 'awg', 'name': 'AWG'},
+                    {'protocol': 'awg3', 'name': 'AWG 3.1'},
+                ],
+            }],
+        )
+
+    async def test_options_hide_awg3_when_not_in_allowed_protocols(self):
+        data = base_data()
+        data['settings']['self_service']['allowed_protocols'] = ['awg', 'awg2']
+        data['servers'][0]['protocols']['awg3'] = {'port': '55426'}
+        service, _, _ = self.make_service(data)
+
+        options = await service.get_self_service_options('user-1', 'web')
+        protocols = options['servers'][0]['protocols']
+        self.assertEqual([p['protocol'] for p in protocols], ['awg'])
+
+    async def test_create_succeeds_for_awg3(self):
+        data = base_data()
+        data['settings']['self_service']['allowed_protocols'] = ['awg', 'awg2', 'awg3']
+        data['servers'][0]['protocols']['awg3'] = {'port': '55426'}
+        service, state, _ = self.make_service(data)
+
+        result = await service.create_user_connection('user-1', 0, 'awg3', 'phone', 'web')
+        self.assertEqual(result['status'], 'success')
+        self.assertEqual(result['connection']['protocol'], 'awg3')
+        self.assertEqual(state['user_connections'][0]['protocol'], 'awg3')
+
+    async def test_create_rejects_xray_and_awg_legacy(self):
+        data = base_data()
+        data['servers'][0]['protocols']['awg_legacy'] = {'port': '51820'}
+        service, _, _ = self.make_service(data)
+
+        with self.assertRaises(SelfServiceError):
+            await service.create_user_connection('user-1', 0, 'xray', 'home', 'web')
+        with self.assertRaises(SelfServiceError):
+            await service.create_user_connection('user-1', 0, 'awg_legacy', 'home', 'web')
+
     async def test_create_rejects_when_user_reaches_max_connections(self):
         data = base_data()
         data['settings']['self_service']['max_connections_per_user'] = 1

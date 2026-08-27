@@ -1635,7 +1635,7 @@ class SelfServiceSettings(BaseModel):
     max_connections_per_user: int = 5
     rate_limit_count: int = 3
     rate_limit_window_seconds: int = 60
-    allowed_protocols: List[str] = ['awg', 'awg2']
+    allowed_protocols: List[str] = ['awg', 'awg2', 'awg3']
 
 
 class SelfServiceConnectionRequest(BaseModel):
