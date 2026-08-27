@@ -393,5 +393,6 @@
   "refresh": "Refresh",
   "rename": "تغییر نام",
   "connection_renamed": "اتصال تغییر نام یافت",
-  "enter_connection_name": "نام جدید اتصال را وارد کنید"
+  "enter_connection_name": "نام جدید اتصال را وارد کنید",
+  "config_saved": "پیکربندی ذخیره شد"
 }

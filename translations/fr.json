@@ -393,5 +393,6 @@
   "refresh": "Refresh",
   "rename": "Renommer",
   "connection_renamed": "Connexion renommée",
-  "enter_connection_name": "Saisir un nouveau nom de connexion"
+  "enter_connection_name": "Saisir un nouveau nom de connexion",
+  "config_saved": "Configuration enregistrée"
 }
