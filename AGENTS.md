@@ -2,7 +2,7 @@
 
 ## Run & verify
 
-- Run the panel: `python3 app.py` → serves on `http://localhost:5000` (port comes from `settings.ssl.panel_port`). Default login `admin` / `admin`.
+- Run the panel: `python3 app.py` → serves on `http://localhost:5000` (port comes from `settings.ssl.panel_port`). Dev overrides: `python3 app.py --port 5050` or `PANEL_PORT=5050 python3 app.py` (CLI wins over env, then `data.json`). Default login `admin` / `admin`.
 - Tests are plain `unittest` (no pytest installed). Run a single suite with:
   `python3 -m unittest tests.test_connection_service tests.test_telegram_self_service tests.test_awg_manager_ip_allocation`
 - Tests import `telegram_bot`, which imports `httpx` — the `httpx` dependency must be installed or the telegram tests fail to import.

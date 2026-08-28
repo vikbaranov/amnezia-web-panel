@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 import json
@@ -4151,6 +4152,36 @@ async def api_backup_restore(request: Request, file: UploadFile = File(...)):
         return JSONResponse({'error': str(e)}, status_code=500)
 
 
+def _resolve_panel_port(ssl_conf):
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--port', type=int)
+    args, _ = parser.parse_known_args()
+
+    def _valid(port):
+        return isinstance(port, int) and 1 <= port <= 65535
+
+    if args.port is not None:
+        if _valid(args.port):
+            return args.port
+        logger.warning("Ignoring invalid --port %r; expected 1-65535", args.port)
+
+    env_port = os.environ.get('PANEL_PORT')
+    if env_port:
+        try:
+            port = int(env_port)
+            if _valid(port):
+                return port
+            logger.warning("Ignoring invalid PANEL_PORT %r; expected 1-65535", env_port)
+        except ValueError:
+            logger.warning("Ignoring invalid PANEL_PORT %r; not an integer", env_port)
+
+    port = ssl_conf.get('panel_port', 5000) or 5000
+    if _valid(port):
+        return port
+    logger.warning("Ignoring invalid settings.ssl.panel_port %r; using 5000", port)
+    return 5000
+
+
 if __name__ == '__main__':
     data = load_data()
     ssl_conf = data.get('settings', {}).get('ssl', {})
@@ -4175,10 +4206,11 @@ if __name__ == '__main__':
                 with open(key_file, 'w') as f:
                     f.write(ssl_conf['key_text'].strip() + '\n')
 
+    panel_port = _resolve_panel_port(ssl_conf)
     uvicorn_kwargs = {
         "app": app,
         "host": "0.0.0.0",
-        "port": ssl_conf.get('panel_port', 5000)
+        "port": panel_port
     }
     
     if ssl_conf.get('enabled') and cert_file and key_file:
