@@ -160,8 +160,7 @@
             const updateUI = () => {
                 const isLight = document.documentElement.getAttribute('data-theme') === 'light';
                 document.querySelectorAll('.theme-toggle').forEach(btn => {
-                    const isLang = btn.getAttribute('onclick').includes('langModal');
-                    if (!isLang) {
+                    if (btn.id === 'themeToggle') {
                         btn.textContent = isLight ? '☀️' : '🌙';
                     }
                 });
@@ -198,8 +197,8 @@
             const toast = document.createElement('div');
             toast.className = `toast toast-${type}`;
 
-            const icons = { success: '✓', error: '✕', info: 'ℹ' };
-            toast.innerHTML = `<span>${icons[type] || 'ℹ'}</span> <span>${message}</span>`;
+            const icons = { success: '✓', error: '✕', info: 'ℹ️' };
+            toast.innerHTML = `<span>${icons[type] || 'ℹ️'}</span> <span>${message}</span>`;
 
             container.appendChild(toast);
             setTimeout(() => {
@@ -308,27 +307,42 @@
         (function () {
             let deferredPrompt = null;
             const installButton = document.getElementById('installButton');
+            if (!installButton) return;
+
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                || window.navigator.standalone === true;
+            if (isStandalone) return;
+
+            // Chrome/Edge fire beforeinstallprompt. Firefox never does, so
+            // show the button and explain how to install from the browser menu.
+            const isFirefox = /Firefox\//.test(navigator.userAgent);
+            if (isFirefox) installButton.style.display = '';
 
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                if (installButton) installButton.style.display = '';
+                installButton.style.display = '';
             });
 
             window.addEventListener('appinstalled', () => {
                 deferredPrompt = null;
-                if (installButton) installButton.style.display = 'none';
+                installButton.style.display = 'none';
             });
 
-            if (installButton) {
-                installButton.addEventListener('click', async () => {
-                    if (!deferredPrompt) return;
+            installButton.addEventListener('click', async () => {
+                if (deferredPrompt) {
                     deferredPrompt.prompt();
                     await deferredPrompt.userChoice;
                     deferredPrompt = null;
                     installButton.style.display = 'none';
-                });
-            }
+                    return;
+                }
+                if (typeof showToast === 'function') {
+                    showToast(_('install_app_howto'), 'info');
+                } else {
+                    alert(_('install_app_howto'));
+                }
+            });
         })();
     </script>
 

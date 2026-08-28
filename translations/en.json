@@ -12,6 +12,7 @@
   "protocols": "Protocols",
   "install": "Install",
   "install_app": "Install app",
+  "install_app_howto": "Open the Firefox menu and choose Install (or Add to Home screen).",
   "uninstall": "Uninstall",
   "run": "Running",
   "stop": "Stopped",

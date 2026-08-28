@@ -4,7 +4,7 @@
 <section>
     <div class="flex items-center justify-between" style="margin-bottom: var(--space-lg);">
         <h1 class="section-title" style="margin-bottom:0;">
-            <span class="icon">🖥</span>
+            <span class="icon">🖥️</span>
             {{ _('nav_servers') }}
         </h1>
         <button class="btn btn-primary" onclick="openModal('addServerModal')">
@@ -21,7 +21,7 @@
             data-self-service="{{ 'true' if server.get('self_service_enabled') else 'false' }}"
             draggable="true">
             <div class="server-meta">
-                <div class="server-icon">🖥</div>
+                <div class="server-icon">🖥️</div>
                 <div style="min-width: 0; flex: 1;">
                     <div class="server-name">
                         <span class="ping-dot ping-pending" id="ping-{{ loop.index0 }}"
@@ -62,7 +62,7 @@
                 </button>
                 <button class="btn btn-danger btn-sm btn-icon" onclick="deleteServer({{ loop.index0 }})"
                     title="{{ _('delete') }}">
-                    🗑
+                    🗑️
                 </button>
             </div>
         </div>
@@ -70,7 +70,7 @@
     </div>
     {% else %}
     <div class="empty-state">
-        <div class="empty-icon">🛡</div>
+        <div class="empty-icon">🛡️</div>
         <div class="empty-title">{{ _('no_servers') }}</div>
         <div class="empty-desc">
             {{ _('add_server_desc') }}

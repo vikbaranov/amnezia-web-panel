@@ -31,7 +31,7 @@
                 <div class="client-avatar my-connection-avatar">🔗</div>
                 <div class="my-connection-main">
                     <div class="client-name my-connection-name">{{ c.name | default('VPN Connection') | e }}</div>
-                    <div class="client-meta my-connection-server">🖥 {{ c.server_name }}</div>
+                    <div class="client-meta my-connection-server">🖥️ {{ c.server_name }}</div>
                     <div class="my-connection-badges">
                         <span class="badge badge-info" style="font-size:0.65rem;">
                             {{ 'AmneziaWG' if c.protocol == 'awg' else ('AmneziaWG 3.1' if c.protocol == 'awg3' else ('AmneziaWG 2.0' if c.protocol == 'awg2' else ('AWG Legacy' if c.protocol == 'awg_legacy' else

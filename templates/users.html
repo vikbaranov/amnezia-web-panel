@@ -554,7 +554,7 @@
                                     title="${u.enabled ? _('stop_btn') : _('start_btn')}">
                                 ${u.enabled ? '🔵' : '⚫'}
                             </button>
-                            <button class="btn btn-danger btn-sm btn-icon" onclick="deleteUser('${u.id}')" title="${_('delete')}">🗑</button>
+                            <button class="btn btn-danger btn-sm btn-icon" onclick="deleteUser('${u.id}')" title="${_('delete')}">🗑️</button>
                         ` : ''}
                         {% endif %}
                             </div>
@@ -854,7 +854,7 @@
                             <div>
                                 <div class="client-name">${c.name || 'Connection'}</div>
                                 <div class="client-meta">
-                                    <span>🖥 ${c.server_name || ''}</span>
+                                    <span>🖥️ ${c.server_name || ''}</span>
                                     <span>${c.protocol === 'awg' ? 'AmneziaWG' : (c.protocol === 'awg2' ? 'AmneziaWG 2.0' : (c.protocol === 'awg3' ? 'AmneziaWG 3.1' : (c.protocol === 'awg_legacy' ? 'AWG Legacy' : (c.protocol === 'xray' ? 'Xray' : c.protocol.toUpperCase()))))}</span>
                                 </div>
                             </div>

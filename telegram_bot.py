@@ -367,7 +367,7 @@ def _build_connections_keyboard(conns: list, data: dict, lang: str = "en") -> di
         label = f"🔐 {name} · {proto} · {server_name}"
         row = [{"text": label, "callback_data": f"cfg:{c['id']}"}]
         if ss_enabled and c.get("created_by") == "self_service":
-            row.append({"text": "🗑", "callback_data": _ref("user_delete", {"conn_id": c["id"], "name": name})})
+            row.append({"text": "🗑️", "callback_data": _ref("user_delete", {"conn_id": c["id"], "name": name})})
         rows.append(row)
     if ss_enabled:
         rows.append([{"text": f"➕ {_tt(lang, 'btn_create_connection')}", "callback_data": "user_create"}])
@@ -426,7 +426,7 @@ def _assign_user_keyboard(data: dict, server_id: int, proto: str, name: str, lan
 def _admin_main_keyboard(lang: str = "en") -> dict:
     return {
         "inline_keyboard": [
-            [{"text": f"🖥 {_tt(lang, 'btn_servers')}", "callback_data": "adm:servers"}],
+            [{"text": f"🖥️ {_tt(lang, 'btn_servers')}", "callback_data": "adm:servers"}],
             [{"text": f"👤 {_tt(lang, 'btn_users')}", "callback_data": "adm:users"}],
             [{"text": f"🔐 {_tt(lang, 'btn_my_connections')}", "callback_data": "adm:myconns"}],
             [{"text": f"➕ {_tt(lang, 'btn_how_add_server')}", "callback_data": "adm:addserver_help"}],
@@ -438,7 +438,7 @@ def _server_keyboard(data: dict, lang: str = "en") -> dict:
     rows = []
     for sid, srv in enumerate(data.get("servers", [])):
         name = srv.get("name") or srv.get("host") or f"Server {sid + 1}"
-        rows.append([{"text": f"🖥 {name}", "callback_data": f"srv:{sid}"}])
+        rows.append([{"text": f"🖥️ {name}", "callback_data": f"srv:{sid}"}])
     rows.append([{"text": f"⬅️ {_tt(lang, 'btn_admin_menu')}", "callback_data": "adm:menu"}])
     return {"inline_keyboard": rows}
 
@@ -484,7 +484,7 @@ def _protocol_keyboard(server_id: int, proto: str, proto_info: dict, lang: str =
         rows.append([{"text": f"👥 {_tt(lang, 'btn_connections')}", "callback_data": _ref("clients", {"sid": server_id, "proto": proto})}])
         rows.append([{"text": f"➕ {_tt(lang, 'btn_create_connection')}", "callback_data": _ref("add_client", {"sid": server_id, "proto": proto})}])
     is_running = proto_info.get("container_running") is True
-    rows.append([{"text": f"⏹ {_tt(lang, 'btn_stop')}" if is_running else f"▶️ {_tt(lang, 'btn_start')}", "callback_data": _ref("toggle_proto", {"sid": server_id, "proto": proto, "start": not is_running})}])
+    rows.append([{"text": f"⏹️ {_tt(lang, 'btn_stop')}" if is_running else f"▶️ {_tt(lang, 'btn_start')}", "callback_data": _ref("toggle_proto", {"sid": server_id, "proto": proto, "start": not is_running})}])
     rows.append([{"text": f"⬅️ {_tt(lang, 'btn_protocols')}", "callback_data": f"srv:{server_id}"}])
     return {"inline_keyboard": rows}
 
@@ -499,7 +499,7 @@ def _client_keyboard(server_id: int, proto: str, client: dict, lang: str = "en")
         "inline_keyboard": [
             [{"text": f"📄 {_tt(lang, 'btn_config')}", "callback_data": _ref("client_cfg", {"sid": server_id, "proto": proto, "client_id": client_id, "name": client.get("name") or client.get("username") or "Connection"})}],
             [{"text": f"🚫 {_tt(lang, 'btn_disable')}" if enabled else f"✅ {_tt(lang, 'btn_enable')}", "callback_data": _ref("toggle_client", {"sid": server_id, "proto": proto, "client_id": client_id, "enable": not enabled})}],
-            [{"text": f"🗑 {_tt(lang, 'btn_delete')}", "callback_data": _ref("remove_client", {"sid": server_id, "proto": proto, "client_id": client_id})}],
+            [{"text": f"🗑️ {_tt(lang, 'btn_delete')}", "callback_data": _ref("remove_client", {"sid": server_id, "proto": proto, "client_id": client_id})}],
             [{"text": f"⬅️ {_tt(lang, 'btn_connections')}", "callback_data": _ref("clients", {"sid": server_id, "proto": proto})}],
         ]
     }
@@ -827,7 +827,7 @@ async def _handle_add_server_command(api: TelegramAPI, msg: dict, load_data_fn: 
 async def _admin_servers(api: TelegramAPI, chat_id: int, message_id: Optional[int], load_data_fn: Callable, lang: str = "en"):
     data = load_data_fn()
     servers = data.get("servers", [])
-    text = f"🖥 <b>Servers</b> ({len(servers)})\n\nChoose a server:"
+    text = f"🖥️ <b>Servers</b> ({len(servers)})\n\nChoose a server:"
     if message_id:
         await api.edit_message(chat_id, message_id, text, reply_markup=_server_keyboard(data, lang))
     else:
@@ -879,7 +879,7 @@ async def _admin_server_detail(api: TelegramAPI, chat_id: int, message_id: int, 
     server = await _refresh_server_protocol_statuses_async(servers[server_id])
     protocols = server.get("protocols", {}) or {}
     text = (
-        f"🖥 <b>{_e(server.get('name') or server.get('host'))}</b>\n"
+        f"🖥️ <b>{_e(server.get('name') or server.get('host'))}</b>\n"
         f"Host: <code>{_e(server.get('host'))}</code>\n"
         f"SSH: <code>{_e(server.get('username'))}@{_e(server.get('host'))}:{_e(server.get('ssh_port', 22))}</code>\n\n"
         f"<b>Protocols</b> ({len(protocols)}):"
@@ -1190,7 +1190,7 @@ async def _user_create_start(api: TelegramAPI, chat_id: int, message_id: int, ca
     for sid, server, protos in eligible:
         name = server.get("name") or server.get("host") or f"Server {sid + 1}"
         proto_text = ", ".join(_protocol_display_name(p) for p in protos)
-        rows.append([{"text": f"🖥 {name} ({proto_text})", "callback_data": _ref("user_create_server", {"sid": sid})}])
+        rows.append([{"text": f"🖥️ {name} ({proto_text})", "callback_data": _ref("user_create_server", {"sid": sid})}])
     rows.append([{"text": f"❌ {_tt(lang, 'btn_cancel')}", "callback_data": "user_create_cancel"}])
 
     await api.edit_message(
@@ -1240,7 +1240,7 @@ async def _user_create_server(api: TelegramAPI, chat_id: int, message_id: int, c
     await api.edit_message(
         chat_id,
         message_id,
-        f"🖥 <b>{_e(server_name)}</b>\n\n{_tt(lang, 'choose_protocol')}",
+        f"🖥️ <b>{_e(server_name)}</b>\n\n{_tt(lang, 'choose_protocol')}",
         reply_markup={"inline_keyboard": rows},
     )
 
@@ -1304,13 +1304,13 @@ async def _user_delete(api: TelegramAPI, chat_id: int, message_id: int, callback
 
     conn_name = conn.get("name") or name or "Connection"
     rows = [
-        [{"text": f"🗑 {_tt(lang, 'btn_delete')}", "callback_data": _ref("user_delete_confirm", {"conn_id": conn_id})}],
+        [{"text": f"🗑️ {_tt(lang, 'btn_delete')}", "callback_data": _ref("user_delete_confirm", {"conn_id": conn_id})}],
         [{"text": f"❌ {_tt(lang, 'btn_cancel')}", "callback_data": "refresh"}],
     ]
     await api.edit_message(
         chat_id,
         message_id,
-        f"🗑 {_tt(lang, 'delete_connection_confirm', name=_e(conn_name))}\n\n{_tt(lang, 'cannot_be_undone')}",
+        f"🗑️ {_tt(lang, 'delete_connection_confirm', name=_e(conn_name))}\n\n{_tt(lang, 'cannot_be_undone')}",
         reply_markup={"inline_keyboard": rows},
     )
 

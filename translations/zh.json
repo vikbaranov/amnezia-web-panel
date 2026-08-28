@@ -12,6 +12,7 @@
   "protocols": "协议",
   "install": "安装",
   "install_app": "安装应用",
+  "install_app_howto": "打开 Firefox 菜单，选择“安装”（或“添加到主屏幕”）。",
   "uninstall": "卸载",
   "run": "运行中",
   "stop": "已停止",

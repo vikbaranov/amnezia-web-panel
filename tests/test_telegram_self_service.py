@@ -300,7 +300,7 @@ class TestUserDeleteConnection(unittest.IsolatedAsyncioTestCase):
         kb = tg_bot._build_connections_keyboard(conns, self.data)
         delete_buttons = [
             btn for row in kb['inline_keyboard']
-            for btn in row if btn.get('text') == '🗑'
+            for btn in row if btn.get('text') == '🗑️'
         ]
         self.assertEqual(len(delete_buttons), 1)
 

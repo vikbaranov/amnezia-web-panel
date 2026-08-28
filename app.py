@@ -1598,7 +1598,7 @@ class BackupDownloadRequest(BaseModel):
 
 class AppearanceSettings(BaseModel):
     title: str = 'Amnezia'
-    logo: str = '🛡'
+    logo: str = '🛡️'
     subtitle: str = 'Web Panel'
 
 

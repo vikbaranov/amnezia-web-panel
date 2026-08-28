@@ -99,7 +99,7 @@
     <div class="login-wrapper">
         <div class="login-card">
             <div class="login-logo">
-                <div class="logo-icon">{{ site_settings.logo or '🛡' }}</div>
+                <div class="logo-icon">{{ site_settings.logo or '🛡️' }}</div>
                 <div class="logo-text">{{ site_settings.title or 'Amnezia Panel' }}</div>
                 <div class="logo-subtitle">{{ site_settings.subtitle or 'Web Panel' }}</div>
             </div>
@@ -309,26 +309,38 @@
         let deferredPrompt = null;
         const installButton = document.getElementById('installButton');
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            if (installButton) installButton.style.display = '';
-        });
+        (function () {
+            if (!installButton) return;
 
-        window.addEventListener('appinstalled', () => {
-            deferredPrompt = null;
-            if (installButton) installButton.style.display = 'none';
-        });
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+                || window.navigator.standalone === true;
+            if (isStandalone) return;
 
-        if (installButton) {
-            installButton.addEventListener('click', async () => {
-                if (!deferredPrompt) return;
-                deferredPrompt.prompt();
-                await deferredPrompt.userChoice;
+            const isFirefox = /Firefox\//.test(navigator.userAgent);
+            if (isFirefox) installButton.style.display = '';
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                installButton.style.display = '';
+            });
+
+            window.addEventListener('appinstalled', () => {
                 deferredPrompt = null;
                 installButton.style.display = 'none';
             });
-        }
+
+            installButton.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    installButton.style.display = 'none';
+                    return;
+                }
+                alert(_('install_app_howto'));
+            });
+        })();
     </script>
 </body>
 

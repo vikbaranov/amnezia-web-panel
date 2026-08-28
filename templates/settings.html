@@ -297,7 +297,7 @@
                             </button>
                             <button type="button" class="btn btn-danger btn-sm" onclick="deleteSyncRemnawave()"
                                 id="syncDelBtn">
-                                <span id="syncDelBtnText">🗑 {{ _('delete_sync_btn') }}</span>
+                                <span id="syncDelBtnText">🗑️ {{ _('delete_sync_btn') }}</span>
                                 <div class="spinner hidden" id="syncDelSpinner" style="width:14px; height:14px;"></div>
                             </button>
                         </div>
@@ -822,7 +822,7 @@
             showToast(`${_('error')}: ` + err.message, 'error');
         } finally {
             btn.disabled = false;
-            text.textContent = `🗑 ${_('delete_sync_btn')}`;
+            text.textContent = `🗑️ ${_('delete_sync_btn')}`;
             spinner.classList.add('hidden');
         }
     }
