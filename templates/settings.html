@@ -425,6 +425,41 @@
                         </button>
                     </div>
                 </div>
+
+                {% set auto_backup = settings.get('auto_backup') or {} %}
+                <div style="border-top: 1px solid var(--border-color); padding-top: var(--space-md);">
+                    <h4 style="margin: 0 0 var(--space-sm) 0; font-size: 0.95rem;">{{ _('auto_backup_title') }}</h4>
+                    <form id="autoBackupForm">
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: var(--space-sm); cursor: pointer;">
+                                <input type="checkbox" name="enabled" id="autoBackupEnabled" {% if auto_backup.get('enabled') %}checked{% endif %}>
+                                {{ _('enable_auto_backup') }}
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">{{ _('auto_backup_interval_label') }}</label>
+                            <select class="form-select" name="interval_hours" id="autoBackupInterval">
+                                {% set auto_backup_interval = auto_backup.get('interval_hours', 24) | int %}
+                                {% for hour in range(1, 25) %}
+                                <option value="{{ hour }}" {% if auto_backup_interval == hour %}selected{% endif %}>{{ hour }} {{ _('hours_suffix') }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+                    <p class="form-hint">{{ _('auto_backup_hint') }}</p>
+                    {% if auto_backup.get('last_run_at') %}
+                    <div class="form-hint" style="margin-top: var(--space-xs);">
+                        {{ _('auto_backup_last_run') }}: {{ auto_backup.last_run_at }} ·
+                        {{ _('auto_backup_last_status') }}: {{ auto_backup.last_status or '-' }} ·
+                        {{ _('auto_backup_created_count') }}: {{ auto_backup.last_created_count or 0 }}
+                    </div>
+                    {% endif %}
+                    {% if auto_backup.get('last_error') %}
+                    <div class="form-hint" style="margin-top: var(--space-xs); color: var(--danger);">
+                        {{ auto_backup.last_error }}
+                    </div>
+                    {% endif %}
+                </div>
             </div>
             <p class="form-hint" style="margin-top: var(--space-sm);">
                 {{ _('restore_confirm') }}
@@ -872,6 +907,12 @@
             panel_port: parseInt(document.getElementById('panel_port').value || '5000')
         };
 
+        const autoBackupForm = document.getElementById('autoBackupForm');
+        const auto_backup = {
+            enabled: autoBackupForm.enabled.checked,
+            interval_hours: parseInt(autoBackupForm.interval_hours.value || '24')
+        };
+
         const self_service = {
             enabled: document.getElementById('ss_enabled').checked,
             web_enabled: document.getElementById('ss_web_enabled').checked,
@@ -887,7 +928,7 @@
         };
 
         try {
-            await apiCall('/api/settings/save', 'POST', { appearance, sync, captcha, telegram, ssl, self_service });
+            await apiCall('/api/settings/save', 'POST', { appearance, sync, captcha, telegram, ssl, auto_backup, self_service });
             showToast(_('settings_saved'), 'success');
             setTimeout(() => window.location.reload(), 1000);
         } catch (err) {

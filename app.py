@@ -20,7 +20,7 @@ import time
 import urllib.request
 import zipfile
 import signal
-from datetime import datetime
+from datetime import datetime, timedelta
 import io
 from fastapi.responses import JSONResponse, RedirectResponse, HTMLResponse, StreamingResponse, FileResponse
 from starlette.background import BackgroundTask
@@ -185,6 +185,14 @@ def load_data():
             'remnawave_server_id': 0,
             'remnawave_protocol': 'awg'
         }
+    })
+    data['settings'].setdefault('auto_backup', {
+        'enabled': False,
+        'interval_hours': 24,
+        'last_run_at': None,
+        'last_status': None,
+        'last_created_count': 0,
+        'last_error': None
     })
     self_service = data['settings'].setdefault('self_service', dict(DEFAULT_SELF_SERVICE_SETTINGS))
     for key, value in DEFAULT_SELF_SERVICE_SETTINGS.items():
@@ -1629,6 +1637,11 @@ class TelegramSettings(BaseModel):
     enabled: bool = False
 
 
+class AutoBackupSettings(BaseModel):
+    enabled: bool = False
+    interval_hours: int = 24
+
+
 class SelfServiceSettings(BaseModel):
     enabled: bool = False
     web_enabled: bool = True
@@ -1664,6 +1677,7 @@ class SaveSettingsRequest(BaseModel):
     captcha: CaptchaSettings
     telegram: TelegramSettings
     ssl: SSLSettings
+    auto_backup: AutoBackupSettings = AutoBackupSettings()
     self_service: SelfServiceSettings = SelfServiceSettings()
 
 
@@ -1771,6 +1785,26 @@ async def startup():
         changed = True
         logger.info("Migrated SSL settings")
 
+    auto_backup = data.setdefault('settings', {}).setdefault('auto_backup', {})
+    if 'enabled' not in auto_backup:
+        auto_backup['enabled'] = False
+        changed = True
+    if 'interval_hours' not in auto_backup:
+        auto_backup['interval_hours'] = 24
+        changed = True
+    if 'last_run_at' not in auto_backup:
+        auto_backup['last_run_at'] = None
+        changed = True
+    if 'last_status' not in auto_backup:
+        auto_backup['last_status'] = None
+        changed = True
+    if 'last_created_count' not in auto_backup:
+        auto_backup['last_created_count'] = 0
+        changed = True
+    if 'last_error' not in auto_backup:
+        auto_backup['last_error'] = None
+        changed = True
+
     if changed:
         save_data(data)
 
@@ -1782,6 +1816,119 @@ async def startup():
     if tg_cfg.get('enabled') and tg_cfg.get('token'):
         logger.info("Starting Telegram bot from saved settings...")
         tg_bot.launch_bot(tg_cfg['token'], load_data, generate_vpn_link, save_data, self_service_connections)
+
+
+def _auto_backup_due(auto_backup: dict, now: Optional[datetime] = None) -> bool:
+    if not auto_backup.get('enabled'):
+        return False
+    try:
+        interval_hours = max(1, min(24, int(auto_backup.get('interval_hours') or 24)))
+    except (TypeError, ValueError):
+        interval_hours = 24
+    last_run_at = auto_backup.get('last_run_at')
+    if not last_run_at:
+        return True
+    try:
+        last_run = datetime.fromisoformat(str(last_run_at))
+    except ValueError:
+        return True
+    now = now or datetime.now()
+    return now - last_run >= timedelta(hours=interval_hours)
+
+
+def _create_auto_backups_once(data: dict) -> dict:
+    started_at = datetime.now()
+    created = []
+    errors = []
+
+    for server_id, server in enumerate(data.get('servers', [])):
+        protocols = server.get('protocols', {}) or {}
+        installed_protocols = [
+            proto for proto, info in protocols.items()
+            if isinstance(info, dict) and info.get('installed') and is_valid_protocol(proto) and protocol_container_name(proto)
+        ]
+        if not installed_protocols:
+            continue
+
+        ssh = None
+        try:
+            ssh = get_ssh(server)
+            ssh.connect()
+            backup_manager = BackupManager(ssh)
+            for proto in installed_protocols:
+                try:
+                    result = backup_manager.create_backup(proto, protocol_container_name(proto))
+                    if result.get('status') == 'success':
+                        created.append({
+                            'server_id': server_id,
+                            'protocol': proto,
+                            'name': result.get('backup', {}).get('name')
+                        })
+                    else:
+                        errors.append({
+                            'server_id': server_id,
+                            'protocol': proto,
+                            'error': result.get('message', 'Failed to create backup')
+                        })
+                except Exception as e:
+                    errors.append({'server_id': server_id, 'protocol': proto, 'error': str(e)})
+        except Exception as e:
+            for proto in installed_protocols:
+                errors.append({'server_id': server_id, 'protocol': proto, 'error': str(e)})
+        finally:
+            if ssh:
+                try:
+                    ssh.disconnect()
+                except Exception:
+                    pass
+
+    status = 'success' if not errors else ('partial' if created else 'error')
+    return {
+        'status': status,
+        'started_at': started_at.isoformat(),
+        'finished_at': datetime.now().isoformat(),
+        'created_count': len(created),
+        'created': created,
+        'errors': errors,
+        'error': '; '.join(f"server {e['server_id']} {e['protocol']}: {e['error']}" for e in errors[:5]) if errors else None
+    }
+
+
+async def run_auto_backups_if_due():
+    data = load_data()
+    auto_backup = data.get('settings', {}).get('auto_backup', {})
+    if not _auto_backup_due(auto_backup):
+        return None
+
+    logger.info("Starting scheduled auto backups...")
+    result = await asyncio.to_thread(_create_auto_backups_once, data)
+
+    async with DATA_LOCK:
+        curr_data = load_data()
+        curr_auto = curr_data.setdefault('settings', {}).setdefault('auto_backup', {})
+        curr_auto['enabled'] = bool(curr_auto.get('enabled', auto_backup.get('enabled', False)))
+        try:
+            curr_auto['interval_hours'] = max(1, min(24, int(curr_auto.get('interval_hours') or auto_backup.get('interval_hours') or 24)))
+        except (TypeError, ValueError):
+            curr_auto['interval_hours'] = 24
+        curr_auto['last_run_at'] = result['finished_at']
+        curr_auto['last_status'] = result['status']
+        curr_auto['last_created_count'] = result['created_count']
+        curr_auto['last_error'] = result.get('error')
+        save_data(curr_data)
+
+    logger.info(
+        "Auto backups finished: status=%s created=%s errors=%s",
+        result['status'], result['created_count'], len(result.get('errors', []))
+    )
+    return result
+
+
+def reset_user_current_traffic(user: dict, now: Optional[datetime] = None) -> dict:
+    now = now or datetime.now()
+    user['traffic_used'] = 0
+    user['last_reset_at'] = now.isoformat()
+    return user
 
 
 def _scrape_server_traffic(server, sid, my_conns):
@@ -1902,7 +2049,10 @@ async def periodic_background_tasks():
                 logger.info(f"Traffic limit reached, disabling users: {to_disable_uids}")
                 await perform_mass_operations(toggle_uids=[(uid, False) for uid in to_disable_uids])
 
-            # --- 2. REMNAWAVE SYNC ---
+            # --- 2. AUTO BACKUP ---
+            await run_auto_backups_if_due()
+
+            # --- 3. REMNAWAVE SYNC ---
             logger.info("Starting background Remnawave sync...")
             data = load_data()
             if data.get('settings', {}).get('sync', {}).get('remnawave_sync_users'):
@@ -3511,6 +3661,28 @@ async def api_toggle_user(request: Request, user_id: str, req: ToggleUserRequest
         return JSONResponse({'error': str(e)}, status_code=500)
 
 
+@app.post('/api/users/{user_id}/traffic/reset', tags=["Users"])
+async def api_reset_user_traffic(request: Request, user_id: str):
+    if not _check_admin(request):
+        return JSONResponse({'error': 'Forbidden'}, status_code=403)
+    try:
+        data = load_data()
+        user = next((u for u in data.get('users', []) if u.get('id') == user_id), None)
+        if not user:
+            return JSONResponse({'error': 'User not found'}, status_code=404)
+
+        reset_user_current_traffic(user)
+        save_data(data)
+        return {
+            'status': 'success',
+            'traffic_used': user['traffic_used'],
+            'last_reset_at': user['last_reset_at']
+        }
+    except Exception as e:
+        logger.exception("Error resetting user traffic")
+        return JSONResponse({'error': str(e)}, status_code=500)
+
+
 @app.post('/api/users/{user_id}/connections/add', tags=["Users"])
 async def api_add_user_connection(request: Request, user_id: str, req: AddUserConnectionRequest):
     if not _check_admin(request):
@@ -3924,14 +4096,25 @@ async def save_settings(request: Request, payload: SaveSettingsRequest):
     if not _check_admin(request):
         return JSONResponse({'error': 'Forbidden'}, status_code=403)
     data = load_data()
-    data['settings']['appearance'] = payload.appearance.dict()
-    data['settings']['sync'] = payload.sync.dict()
-    data['settings']['captcha'] = payload.captcha.dict()
-    data['settings']['telegram'] = payload.telegram.dict()
-    data['settings']['ssl'] = payload.ssl.dict()
-    data['settings']['self_service'] = payload.self_service.dict()
+    settings = data.setdefault('settings', {})
+    settings['appearance'] = payload.appearance.dict()
+    settings['sync'] = payload.sync.dict()
+    settings['captcha'] = payload.captcha.dict()
+    settings['telegram'] = payload.telegram.dict()
+    settings['ssl'] = payload.ssl.dict()
+    settings['self_service'] = payload.self_service.dict()
+    old_auto_backup = settings.get('auto_backup', {}) or {}
+    interval_hours = max(1, min(24, int(payload.auto_backup.interval_hours or 24)))
+    settings['auto_backup'] = {
+        'enabled': bool(payload.auto_backup.enabled),
+        'interval_hours': interval_hours,
+        'last_run_at': old_auto_backup.get('last_run_at'),
+        'last_status': old_auto_backup.get('last_status'),
+        'last_created_count': old_auto_backup.get('last_created_count', 0),
+        'last_error': old_auto_backup.get('last_error')
+    }
     save_data(data)
-    logger.info("Settings saved (including captcha and telegram)")
+    logger.info("Settings saved (including captcha, telegram and auto backup)")
 
     # Handle bot start/stop based on new telegram settings
     tg_cfg = payload.telegram
